@@ -1,12 +1,12 @@
 const state = {
   tab: 'c2c',
   c2c: { step: 0, item: 'USB-C 充电宝', memo: '', dueChoice: '1h', customDue: '', borrowerVerified: false, verified: false, popup: null, window: null, itemPosition: 'right', events: [] },
-  b2c: { step: 0, item: '商场婴儿车 A-03', memo: '', dueChoice: '1d', customDue: '', verified: false, returnRequested: false, disputed: false, popup: null, window: null, itemPosition: 'right', inventory: [], selectedItem: 0, events: [] }
+  b2c: { step: 0, item: '商场婴儿车 A-03', memo: '', dueChoice: '1d', customDue: '', verified: false, returnRequested: false, popup: null, window: null, itemPosition: 'right', inventory: [], selectedItem: 0, events: [] }
 };
 
 const steps = {
   c2c: ['填写借用请求', '出借方扫码', '确认借出', '确认收到', '发起归还', '确认归还'],
-  b2c: ['商家上架', '顾客扫码', '确认借用', '使用中', '完成归还']
+  b2c: ['商家上架', '顾客扫码', '确认借用', '使用与归还', '完成归还']
 };
 const labels = { '1h': '1 小时内', '12h': '12 小时内', '1d': '1 天内', '2d': '2 天内', custom: '自定义' };
 const $ = (selector) => document.querySelector(selector);
@@ -23,7 +23,7 @@ function seconds(s) { return Math.max(0,Math.ceil((((s.window?.deadline)||Date.n
 function timer(s, text) { return `<div class="handoff-timer"><span class="timer-number" data-window-countdown>${seconds(s)}</span><div><b>秒 · ${text}</b><small>请对方当面确认；超时未确认将退回发起方</small></div></div>`; }
 function objectTracker(s, mode) {
   const c=mode==='c2c',left=c?'借用者':'顾客（借用方）',right=c?'出借者':'商家（出借方）';
-  const expect=c?(s.step>=4&&s.step<=5?'left':'right'):(s.step>=3&&s.step<=4?'left':'right');
+  const expect=c?(s.step>=4&&s.step<=5?'left':'right'):(s.step===3?'left':'right');
   const actual=s.itemPosition,good=actual===expect;
   return `<section class="object-tracker"><div class="tracker-heading"><div><span class="micro">PHYSICAL ITEM · 实物位置</span><h4>点按一侧，移动这件物品</h4></div><span>仅模拟实物位置，不改变上方流程</span></div><div class="tracker-lanes"><button class="tracker-side ${actual==='left'?'holding':''}" data-position="left"><span>${left}</span>${actual==='left'?`<span class="parcel" aria-label="物品在${left}手中">📦</span>`:'<span class="empty-spot">点击移到这里</span>'}</button><div class="tracker-arrow">↔</div><button class="tracker-side ${actual==='right'?'holding':''}" data-position="right"><span>${right}</span>${actual==='right'?`<span class="parcel" aria-label="物品在${right}手中">📦</span>`:'<span class="empty-spot">点击移到这里</span>'}</button></div><div class="tracker-status ${good?'good':'bad'}"><b>${good?'✓ 位置符合当前步骤':'! 位置与当前步骤不符'}</b><span>目前在${actual==='left'?left:right}手中；当前应在${expect==='left'?left:right}手中。${good?'':'请当面核对实物。'}</span></div></section>`;
 }
@@ -49,7 +49,7 @@ function c2c(s) {
   return {b,l,banner,active: s.step===0?'b':s.step===1?'l':s.step===2?'l':s.step===3?'l':s.step===4?'b':s.step===5?'b':s.step===6?'l':'both'};
 }
 function b2c(s) {
-  let b='',l='',banner='商家在右侧展示二维码，顾客（左侧）扫码直接确认借用，无需商家多余操作。';
+  let b='',l='',banner='商家在右侧展示二维码，顾客（左侧）扫码直接确认借用；归还时顾客交回实物，由商家直接点确认收回。';
   const inventory = `<div class="inventory"><div class="micro">商家已上架 · ${s.inventory.length} 件</div>${s.inventory.map((entry,i)=>`<button class="inventory-row ${i===s.selectedItem?'selected':''}" data-item-index="${i}"><span>${esc(entry.item)}</span><small>独立借用码 #${String(i+1).padStart(2,'0')}</small></button>`).join('')}</div>`;
   switch(s.step){
     case 0:
@@ -65,19 +65,15 @@ function b2c(s) {
       l=`<div class="micro">商家视角 · 等待中</div><h4>顾客正在扫码借用</h4><p class="desc">顾客完成真人验证并确认借用后，系统会自动更新状态，商家无需手动确认。</p>${summary(s)}`;
       break;
     case 3:
-      b=`<div class="micro">借用进行中</div><h4>${esc(s.item)} 正在借用中</h4><p class="desc">借用凭证已生效。使用结束后请当面归还物品并开启归还确认。</p>${summary(s)}${s.disputed?`<div class="dispute-panel"><div class="dispute-head"><span>申诉中</span><b>DISPUTE OPEN</b></div><h4>未拿到实物申诉</h4><p>已向客服/商场提交未取得实物申诉，正在处理中。</p>${actions(button('撤销申诉','b-cancel-dispute','ghost'))}</div>`:actions(button('我已归还 · 开启 15 秒归还确认 →','b-return'),button('未拿到物品？发起申诉','b-dispute','danger-outline'))}`;
-      l=`<div class="micro">商家视角 · 借出中</div><h4>顾客已成功借用</h4><p class="desc">顾客已自主确认借用。归还时，商家可直接核对实物收回，或等待顾客发起归还。</p>${s.disputed?`<div class="danger-callout"><b>! 顾客已发起未收到实物申诉</b><span>顾客报告未拿到实物，请现场核实。</span></div>`:''}${summary(s)}${actions(button('实物已归还 · 确认收回','b-merchant-finish','secondary'))}`;
-      break;
-    case 4:
-      b=`<div class="micro">STEP 04 · 15 秒归还窗口</div><h4>等待商家确认收回</h4>${timer(s,'等待商家确认')}${danger('把实物交还商家，并请商家在右侧点击“确认收回”。若未确认，15 秒后将退回你这里。')}${summary(s)}`;
-      l=`<div class="micro">商家 · 15 秒归还窗口</div><h4>核对实物后确认收回</h4>${timer(s,'核对归还')}${danger('收到实物后点击“已收回实物”。如未收到，请勿点击，15 秒后流程将退回顾客。')}${summary(s)}${actions(button('已收回实物 · 完成借还','b-merchant-finish'))}`;
+      b=`<div class="micro">借用进行中</div><h4>${esc(s.item)} 正在借用中</h4><p class="desc">借用凭证已生效。使用结束后请将实物当面交还商家，由商家在商家端直接点确认收回即可。</p>${summary(s)}`;
+      l=`<div class="micro">商家视角 · 借出中</div><h4>顾客已成功借用</h4><p class="desc">顾客交还实物后，商家核对物品无误，直接点击下方按钮完成收回。</p>${summary(s)}${actions(button('已收回实物 · 确认完成借还 →','b-merchant-finish'))}`;
       break;
     default:
-      b=complete(s,'借用承诺已完成','这件物品已归还，感谢你认真完成承诺。');
+      b=complete(s,'借用承诺已完成','这件物品已归还，商家已确认收回。感谢你认真完成承诺！');
       l=complete(s,'借还已完成','商家已确认收回物品，借还记录已闭环。');
-      banner='商家已确认收回，借还完成。';
+      banner='商家已确认收回实物，借还流程已完成。';
   }
-  return {b,l,banner,active:s.step===0?'l':s.step===1?'b':s.step===2?'b':s.step===3?'b':s.step===4?'both':'both'};
+  return {b,l,banner,active:s.step===0?'l':s.step===1?'b':s.step===2?'b':s.step===3?'l':'both'};
 }
 function complete(s,title,desc){return `<div class="success-mark">✓</div><div class="micro">PROOF OF PROMISE · FULFILLED</div><h4>${title}</h4><p class="desc">${desc}</p>${summary(s)}<div class="verify"><span class="verify-logo">✳</span><span><b>承诺已履行</b><small>一个真实的人，完成了一次真实的借还。</small></span></div>`;}
 function settleWindow(s, mode, transferred, note){
@@ -85,7 +81,7 @@ function settleWindow(s, mode, transferred, note){
   s.window=null;s.popup=null;
   s.timeoutNotice='';s.timeoutInitiator='';
   if(mode==='c2c')s.step=phase==='handoff'?(transferred?5:3):(transferred?8:5);
-  else s.step=transferred?5:3;
+  else s.step=transferred?4:3;
   log(s,note);
 }
 function popupHtml(s){
@@ -96,8 +92,8 @@ function openPopup(s,title,tasks,note,phase,nextStep){s.popup={title,tasks,note,
 function render(){
   const tab=state.tab,s=state[tab],flow=tab==='c2c'?c2c(s):b2c(s);document.querySelectorAll('.tab').forEach(el=>{const active=el.dataset.tab===tab;el.classList.toggle('active',active);el.setAttribute('aria-selected',String(active));});$('#scenario').setAttribute('aria-labelledby',`tab-${tab}`);
   if(s.timeoutNotice){const notice=danger(s.timeoutNotice);if(s.timeoutInitiator==='l')flow.l=notice+flow.l;else flow.b=notice+flow.b;}
-  const title=tab==='c2c'?'从一个借用请求开始':'把可借物品交到顾客手中';const sub=tab==='c2c'?'借用者提出需求，出借者验证并确认，双方完成交接与归还。':'商家在右侧上架，顾客在左侧扫码确认借用，归还时由商家核对。';
-  const progressStep=tab==='c2c'?Math.min(5,[0,1,1,2,3,4,4,5,5][s.step]):Math.min(4,[0,1,2,3,4,4][s.step]);
+  const title=tab==='c2c'?'从一个借用请求开始':'把可借物品交到顾客手中';const sub=tab==='c2c'?'借用者提出需求，出借者验证并确认，双方完成交接与归还。':'商家在右侧上架，顾客在左侧扫码借用，归还时由商家直接确认收回。';
+  const progressStep=tab==='c2c'?Math.min(5,[0,1,1,2,3,4,4,5,5][s.step]):Math.min(4,[0,1,2,3,4][s.step]);
   const cards=tab==='c2c'?card('借用者',flow.active==='b'||flow.active==='both',flow.b)+card('出借者',flow.active==='l'||flow.active==='both',flow.l):card('顾客（借用方）',flow.active==='b'||flow.active==='both',flow.b)+card('商家（出借方）',flow.active==='l'||flow.active==='both',flow.l);
   $('#scenario').innerHTML=`<div class="scenario-intro"><div><h3>${title}</h3><p>${sub}</p></div><button class="reset" data-action="reset">↺ 重新体验</button></div><div class="progress">${steps[tab].map((name,i)=>`<div class="progress-item ${i<progressStep?'done':i===progressStep?'current':''}"><span class="dot">${i<progressStep?'✓':i+1}</span><span>${name}</span></div>`).join('')}</div><div class="stage"><div class="stage-banner"><span class="pulse"></span><span>${flow.banner}</span></div><div class="stage-grid">${cards}</div>${objectTracker(s,tab)}</div>${popupHtml(s)}<div class="timeline"><span class="timeline-label">ACTIVITY</span>${s.events.length?s.events.map(e=>`<span class="event">${esc(e)}</span>`).join(''):'<span class="event" style="color:#a6b0a6">等待第一步操作</span>'}</div>`;
 }
@@ -119,7 +115,7 @@ document.addEventListener('click',e=>{
   const control=e.target.closest('[data-action]');if(!control)return;
   const action=control.dataset.action,s=state[state.tab],mode=state.tab;
   if(action==='reset'){
-    state[mode]=mode==='c2c'?{step:0,item:'USB-C 充电宝',memo:'',dueChoice:'1h',customDue:'',borrowerVerified:false,verified:false,popup:null,window:null,itemPosition:'right',events:[]}:{step:0,item:'商场婴儿车 A-03',memo:'',dueChoice:'1d',customDue:'',verified:false,returnRequested:false,disputed:false,popup:null,window:null,itemPosition:'right',inventory:[],selectedItem:0,events:[]};
+    state[mode]=mode==='c2c'?{step:0,item:'USB-C 充电宝',memo:'',dueChoice:'1h',customDue:'',borrowerVerified:false,verified:false,popup:null,window:null,itemPosition:'right',events:[]}:{step:0,item:'商场婴儿车 A-03',memo:'',dueChoice:'1d',customDue:'',verified:false,returnRequested:false,popup:null,window:null,itemPosition:'right',inventory:[],selectedItem:0,events:[]};
     render();toast('场景已重置');return;
   }
   if(expireWindow(s,mode)){render();toast('15 秒窗口已结束');return;}
@@ -138,10 +134,7 @@ document.addEventListener('click',e=>{
     'b-edit':()=>{s.editingIndex=s.selectedItem;s.step=0},'b-scan':()=>{log(s,'顾客已扫码');s.step=2},
     'b-verify':()=>{s.verified=true;log(s,'顾客 World ID 已验证');toast('模拟验证成功，已返回网站')},
     'b-accept':()=>{s.step=3;s.itemPosition='left';log(s,'顾客确认借用，借用凭证生效');toast('借用成功，已生效')},
-    'b-dispute':()=>{s.disputed=true;log(s,'顾客发起未收到实物申诉');toast('已提交申诉')},
-    'b-cancel-dispute':()=>{s.disputed=false;log(s,'顾客撤销申诉');toast('申诉已撤销')},
-    'b-return':()=>{s.returnRequested=true;openPopup(s,'顾客：请完成这两件事',['把物品交回商家手里。','请商家在右侧屏幕点“已收回实物”。'],'15 秒内商家没有确认，本次归还不会成立，操作会退回你这里。','return',4)},
-    'b-merchant-finish':()=>{if(s.window)settleWindow(s,mode,true,'商家当面确认收回实物');else{s.step=5;log(s,'商家直接确认收回实物');}s.itemPosition='right';}
+    'b-merchant-finish':()=>{s.step=4;s.itemPosition='right';log(s,'商家核对实物，确认已收回');toast('已确认收回，借还完成');}
   };
   if(transitions[action]){transitions[action]();render();}
 });
