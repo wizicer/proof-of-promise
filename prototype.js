@@ -40,7 +40,7 @@ function c2c(s) {
     case 0: b=form(s); l=placeholder('↔','等待借用请求','借用者填写信息并生成二维码后，出借者即可扫码。'); break;
     case 1: b=`<div class="micro">STEP 02 · 等待扫码</div><h4>把借用码给出借者看</h4><p class="desc">面对面展示二维码。演示时请点击右侧的“模拟扫码”。</p>${qrBox('出借者扫描此码','请求已创建 · 等待对方加入',1)}${summary(s)}${actions(button('修改请求','c-edit','ghost'))}`; l=`<div class="micro">LENDER · 扫码加入</div><h4>有人想向你借东西</h4><p class="desc">扫描借用者手机上的码，查看承诺内容。</p>${actions(button('模拟扫描借用码 →','c-scan'))}`; break;
     case 2: b=`<div class="micro">等待出借方</div><h4>对方正在确认身份</h4><p class="desc">World ID 验证通过后，出借者会检查内容并决定是否借出。</p>${qrBox('借用请求已被扫描','正在等待对方确认',2)}${summary(s)}`; l=`<div class="micro">STEP 03 · 身份验证</div><h4>先确认你是真人</h4><p class="desc">借用者已完成真人验证。请你也验证后再决定是否借出。</p>${verifiedBadge('借用者已完成 World ID 真人验证')}${summary(s)}<div class="verify"><span class="verify-logo">◉</span><span><b>出借者 World ID</b><small>此处模拟跳转 World App</small></span></div>${actions(button('打开 World App · 模拟验证 →','c-verify'))}`; break;
-    case 3: b=`<div class="micro">等待出借方</div><h4>对方已完成 World ID 验证</h4><p class="desc">出借方正在核对物品和归还时间。</p>${summary(s)}`; l=`<div class="micro">STEP 04 · 出借确认</div><h4>确定借出这件物品？</h4>${danger('点击后会开启 15 秒交接窗口。请把实物给借用者，并要求对方在自己的屏幕上点“已收到”。如果对方未确认，请当面把东西拿回来。')}${verifiedBadge('借用者已完成真人验证')}${summary(s)}${actions(button('同意借出 · 开启 15 秒交接 →','c-lend'))}`; break;
+    case 3: b=`<div class="micro">等待出借方</div><h4>对方已完成 World ID 验证</h4><p class="desc">出借方正在核对物品和归还时间。</p>${summary(s)}`; l=`<div class="micro">STEP 04 · 出借确认</div><h4>确定借出这件物品？</h4>${danger('点击“同意借出”后，请先阅读弹窗中的两步交接说明，再开启 15 秒确认。')}${verifiedBadge('借用者已完成真人验证')}${summary(s)}${actions(button('同意借出','c-lend'))}`; break;
     case 4: b=`<div class="micro">STEP 05 · 15 秒交接窗口</div><h4>拿到实物后请确认</h4>${timer(s,'当面交接')}${danger('只有实际拿到物品后才点“我已收到”。如果没有拿到，什么都不用点；15 秒后会退回出借者。')}${summary(s)}${actions(button('我已收到实物 · 开始借用 →','c-receive'))}`; l=`<div class="micro">出借者 · 15 秒交接窗口</div><h4>请对方当面确认收到</h4>${timer(s,'等待借用者确认')}${danger('现在做两件事：① 把物品给对方；② 要求对方在自己的屏幕上点“已收到”。如果 15 秒内没确认，请当面把物品拿回来，流程会退回你这里。')}${summary(s)}`; break;
     case 5: b=`<div class="micro">借用进行中</div><h4>${esc(s.item)} 正在借用中</h4><p class="desc">使用结束后，请面对面归还，并发起归还确认。</p>${summary(s)}${actions(button('我已归还 · 开启 15 秒归还窗口 →','c-return'))}`; l=`<div class="micro">借用进行中</div><h4>等待物品归还</h4><p class="desc">借用者发起归还后，你可以核对实物并确认。</p>${summary(s)}`; break;
     case 6: b=`<div class="micro">STEP 06 · 15 秒归还窗口</div><h4>请出借者确认收回</h4>${timer(s,'当面归还')}${danger('把实物交回出借者，并要求对方在自己的屏幕上点“已收回”。如果对方未确认，15 秒后流程会退回你这里。')}${qrBox('归还确认码','出借者核对实物后确认收回',6)}`; l=`<div class="micro">出借者 · 15 秒归还窗口</div><h4>核对实物后确认</h4>${timer(s,'核对归还')}${danger('只有真正收回并核对实物后，才点“已收回”。如果没拿到物品，什么都不用点；15 秒后归还请求会退回借用者。')}${actions(button('已收到归还实物 · 完成借还','c-finish'))}`; break;
@@ -73,9 +73,9 @@ function settleWindow(s, mode, transferred, note){
 }
 function popupHtml(s){
   if(!s.popup)return '';
-  return `<div class="handoff-overlay"><div class="handoff-dialog" role="dialog" aria-modal="true" aria-label="${esc(s.popup.title)}"><div class="micro">15 SECOND HANDOFF</div><h3>${esc(s.popup.title)}</h3><div class="dialog-clock"><span class="timer-number">${seconds(s)}</span><span>秒内请完成当面交接</span></div><ol>${s.popup.tasks.map(task=>`<li>${esc(task)}</li>`).join('')}</ol><p>${esc(s.popup.note)}</p>${button('明白了，继续交接','popup-close')}</div></div>`;
+  return `<div class="handoff-overlay"><div class="handoff-dialog" role="dialog" aria-modal="true" aria-label="${esc(s.popup.title)}"><div class="micro">面对面交接指引</div><h3>${esc(s.popup.title)}</h3><p class="dialog-intro">开始倒计时前，请准备好完成下面两件事：</p><ol>${s.popup.tasks.map(task=>`<li>${esc(task)}</li>`).join('')}</ol><p class="dialog-note">${esc(s.popup.note)}</p>${button('开启 15 秒交接','popup-start')}</div></div>`;
 }
-function openPopup(s,title,tasks,note){s.popup={title,tasks,note};}
+function openPopup(s,title,tasks,note,phase,nextStep){s.popup={title,tasks,note,phase,nextStep};}
 function render(){
   const tab=state.tab,s=state[tab],flow=tab==='c2c'?c2c(s):b2c(s);document.querySelectorAll('.tab').forEach(el=>{const active=el.dataset.tab===tab;el.classList.toggle('active',active);el.setAttribute('aria-selected',String(active));});$('#scenario').setAttribute('aria-labelledby',`tab-${tab}`);
   if(s.timeoutNotice){const notice=danger(s.timeoutNotice);if(s.timeoutInitiator==='l')flow.l=notice+flow.l;else flow.b=notice+flow.b;}
@@ -106,23 +106,23 @@ document.addEventListener('click',e=>{
     render();toast('场景已重置');return;
   }
   if(expireWindow(s,mode)){render();toast('15 秒窗口已结束');return;}
-  if(action==='popup-close'){s.popup=null;render();return;}
+  if(action==='popup-start'&&s.popup){const {phase,nextStep}=s.popup;s.popup=null;s.step=nextStep;startWindow(s,phase);log(s,'15 秒当面确认开始');render();return;}
   const transitions={
     'c-borrower-verify':()=>{s.borrowerVerified=true;log(s,'借用者 World ID 已验证');toast('借用者模拟验证成功')},
     'c-create':()=>{if(!s.borrowerVerified){toast('借用者需要先完成 World ID 验证');return;}if(!validate(s))return;log(s,'借用请求已创建');s.step=1},
     'c-edit':()=>{s.step=0},'c-scan':()=>{log(s,'出借方已扫码');s.step=2},
     'c-verify':()=>{s.verified=true;log(s,'出借方 World ID 已验证');s.step=3;toast('模拟验证成功，已返回网站')},
-    'c-lend':()=>{log(s,'出借方同意借出，15 秒交接窗口开始');s.step=4;startWindow(s,'handoff');openPopup(s,'出借者：现在开始交接',['把物品交到借用者手里。','要求借用者在他的屏幕上点“我已收到实物”。'],'15 秒内没有收到对方确认，请当面把物品拿回来；借出不会成立。')},
+    'c-lend':()=>{openPopup(s,'出借者：请完成这两件事',['把物品交到借用者手里。','要求借用者在他的屏幕上点“我已收到实物”。'],'如果对方在 15 秒内没有确认，请当面把物品拿回来；借出不会成立。','handoff',4)},
     'c-receive':()=>settleWindow(s,mode,true,'借用者当面确认收到实物'),
-    'c-return':()=>{log(s,'借用者发起归还，15 秒窗口开始');s.step=6;startWindow(s,'return');openPopup(s,'借用者：现在当面归还',['把物品交回出借者手里。','要求出借者在他的屏幕上点“已收到归还实物”。'],'15 秒内没有收到对方确认，本次归还不会成立，操作会退回你这里。')},
+    'c-return':()=>{openPopup(s,'借用者：请完成这两件事',['把物品交回出借者手里。','要求出借者在他的屏幕上点“已收到归还实物”。'],'15 秒内没有收到对方确认，本次归还不会成立，操作会退回你这里。','return',6)},
     'c-finish':()=>settleWindow(s,mode,true,'出借方当面确认收回实物'),
     'b-publish':()=>{if(!validate(s))return;const entry={item:s.item,memo:s.memo,dueChoice:s.dueChoice,customDue:s.customDue};if(s.editingIndex!==undefined){s.inventory[s.editingIndex]=entry;s.selectedItem=s.editingIndex;delete s.editingIndex;}else{s.inventory.push(entry);s.selectedItem=s.inventory.length-1;}log(s,`商家已上架 ${s.item}`);s.step=1},
     'b-add':()=>{s.step=0;s.item='便携雨伞 B-02';s.memo='';s.dueChoice='1d';s.customDue=''},
     'b-edit':()=>{s.editingIndex=s.selectedItem;s.step=0},'b-scan':()=>{log(s,'顾客已扫码');s.step=2},
     'b-verify':()=>{s.verified=true;log(s,'顾客 World ID 已验证');toast('模拟验证成功，已返回网站')},
-    'b-accept':()=>{log(s,'顾客确认借用，15 秒交接窗口开始');s.step=3;startWindow(s,'handoff');openPopup(s,'顾客：请商家当面交付',['向商家展示借用凭证。','领取实物，并请商家在他的屏幕上确认交付。'],'15 秒内商家没有确认，借用不会成立，操作会退回你这里。')},
+    'b-accept':()=>{openPopup(s,'顾客：请完成这两件事',['向商家展示借用凭证。','领取实物，并请商家在他的屏幕上确认交付。'],'15 秒内商家没有确认，借用不会成立，操作会退回你这里。','handoff',3)},
     'b-merchant-handover':()=>settleWindow(s,mode,true,'商家在自己的界面确认已交付实物'),
-    'b-return':()=>{s.returnRequested=true;log(s,'顾客发起归还，15 秒窗口开始');s.step=5;startWindow(s,'return');openPopup(s,'顾客：现在当面归还',['把物品交回商家手里。','请商家在他的屏幕上点“已收回实物”。'],'15 秒内商家没有确认，本次归还不会成立，操作会退回你这里。')},
+    'b-return':()=>{s.returnRequested=true;openPopup(s,'顾客：请完成这两件事',['把物品交回商家手里。','请商家在他的屏幕上点“已收回实物”。'],'15 秒内商家没有确认，本次归还不会成立，操作会退回你这里。','return',5)},
     'b-merchant-finish':()=>{if(s.window)settleWindow(s,mode,true,'商家当面确认收回实物');else{s.step=6;log(s,'商家直接确认收回实物')}}
   };
   if(transitions[action]){transitions[action]();render();}
