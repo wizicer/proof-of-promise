@@ -45,7 +45,6 @@ export default function PromisePage({ params }: { params: Promise<{id:string}> }
             <p className="muted">You promise to return it by the time above. No name or phone number is shared.</p>
             <HumanVerifyButton
               label="Prove I'm human & accept"
-              action="promise-presence-test"
               signal={p.id}
               onVerified={async proof => {
                 const r=await fetch(`/api/promises/${p.id}/accept`,{

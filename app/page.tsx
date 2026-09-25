@@ -64,7 +64,6 @@ export default function Home() {
           <div className="success">Promise created. One last step: prove a real human stands behind it.</div>
           <HumanVerifyButton
             label="Prove I'm human & publish"
-            action="promise-presence-test"
             signal={createdId}
             onVerified={async proof => {
               const res = await fetch(`/api/promises/${createdId}`, {
