@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Borrow from a Human · 交互原型</title>
+  <title>Proof of Promise · Interactive Prototype</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -13,12 +13,12 @@
 <body>
   <div class="app-shell">
     <main>
-      <section class="workspace" aria-label="借还流程模拟器">
+      <section class="workspace" aria-label="Promise Flow Simulator">
         <div class="workspace-head">
-          <div><div class="section-kicker">THE EXPERIENCE</div><h2>选择借还场景</h2></div>
-          <div class="tabs" role="tablist" aria-label="借还场景">
-            <button id="tab-c2c" class="tab active" role="tab" aria-selected="true" aria-controls="scenario" data-tab="c2c"><span class="tab-icon">↔</span><span>C2C <small>人与人之间</small></span></button>
-            <button id="tab-b2c" class="tab" role="tab" aria-selected="false" aria-controls="scenario" data-tab="b2c"><span class="tab-icon">▣</span><span>B2C <small>商家与顾客</small></span></button>
+          <div><div class="section-kicker">PROOF OF PROMISE</div><h2>Promise Maker &amp; Holder</h2></div>
+          <div class="tabs" role="tablist" aria-label="Scenario Selection">
+            <button id="tab-c2c" class="tab active" role="tab" aria-selected="true" aria-controls="scenario" data-tab="c2c"><span class="tab-icon">↔</span><span>C2C <small>Peer to Peer</small></span></button>
+            <button id="tab-b2c" class="tab" role="tab" aria-selected="false" aria-controls="scenario" data-tab="b2c"><span class="tab-icon">▣</span><span>B2C <small>Merchant &amp; Customer</small></span></button>
           </div>
         </div>
         <div id="scenario" role="tabpanel" aria-labelledby="tab-c2c"></div>
