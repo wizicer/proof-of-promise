@@ -9,7 +9,10 @@ export async function POST(req:Request) {
     method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(idkitResponse)
   });
   const data=await response.json().catch(()=>({}));
-  if(!response.ok) return NextResponse.json({error:"Verification failed",details:data},{status:400});
+  if(!response.ok) {
+    console.error("World ID verification rejected", {status:response.status, details:data});
+    return NextResponse.json({error:"Verification failed",details:data},{status:400});
+  }
   if(data.environment && data.environment !== (process.env.NEXT_PUBLIC_WORLD_ENV || "staging"))
     return NextResponse.json({error:"World ID environment mismatch"},{status:400});
   return NextResponse.json({success:true,verification:data});
