@@ -1,27 +1,8 @@
 # Borrow From A Human
 
-**Proof of Promise** — *A promise you can make to a stranger.*
+A C2C Proof of Promise application based on `prototype.html`.
 
-A tiny ETHGlobal Tokyo 2026 MVP for lending a physical item to a stranger without collecting their name, phone number, passport, public profile, or deposit.
-
-## Demo flow
-
-1. Lender creates a promise: `USB-C Charger`, return by `22:00`.
-2. Lender proves they are a human with World ID.
-3. The app creates a QR code.
-4. Borrower scans it and proves they are a human.
-5. The promise becomes active.
-6. Borrower requests return.
-7. Lender confirms the physical item is back.
-8. Both see a **Proof of Promise — Fulfilled** card.
-
-## Why World ID?
-
-The trust moment is not login. It is the moment a stranger accepts a real-world promise.
-
-World ID supplies the minimum assurance needed: **there is one real human behind each side of the promise**. The app intentionally does not request passport identity, nationality, name, phone number, or a public reputation score.
-
-## Run immediately (demo mode)
+## Run
 
 ```bash
 cp .env.example .env.local
@@ -29,53 +10,27 @@ npm install
 npm run dev
 ```
 
-Keep `NEXT_PUBLIC_DEMO_MODE=true`. This bypasses the World UI so the whole product flow can be tested with two browser windows.
+Open `http://localhost:3000`. In demo mode, use **two separate browser profiles** for the borrower and lender; ordinary windows share the same session cookie. For phone QR scanning, use a public HTTPS URL rather than localhost. Data persists in `.data/promises.sqlite` (or `PROMISE_DB_PATH`). Keep that path on a persistent volume for deployment.
 
-## Enable real World ID 4.0
+## C2C flow
 
-Create an app/RP in the World Developer Portal and fill:
+1. Borrower verifies World ID and creates a request with an item, deadline and optional memo.
+2. Borrower shows the request QR. Lender opens it on their device, verifies World ID and agrees to hand over the item.
+3. Borrower checks the physical item and confirms receipt. Borrowing becomes active.
+4. Borrower hands the item back and requests return confirmation.
+5. Lender inspects the item and confirms return. Both see the fulfilled record in **My Promises**.
 
-```env
-NEXT_PUBLIC_WORLD_APP_ID=app_...
-WORLD_RP_ID=rp_...
-WORLD_RP_SIGNING_KEY=0x...
-NEXT_PUBLIC_WORLD_ENV=staging
-NEXT_PUBLIC_DEMO_MODE=false
-NEXT_PUBLIC_BASE_URL=https://YOUR-PUBLIC-HTTPS-URL
-```
+The lender may cancel an unconfirmed handover; the borrower may cancel a pending return request. Both roles are linked to the server-side World ID account record. The public request API never returns a nullifier. Each state transition checks the authenticated role and expected prior state in one SQLite statement.
 
-The implementation:
-- generates RP signatures **server-side**
-- uses `proofOfHuman(...)`
-- forwards the IDKit result to World's `/api/v4/verify/{rp_id}` endpoint **server-side**
-- binds each verification to the Promise ID via `signal`
-- keeps the signing key off the client
+## World ID setup
 
-For development, use World's simulator with `NEXT_PUBLIC_WORLD_ENV=staging`.
+Set `NEXT_PUBLIC_DEMO_MODE=false` and fill `NEXT_PUBLIC_WORLD_APP_ID`, `WORLD_RP_ID`, `WORLD_RP_SIGNING_KEY`, and `NEXT_PUBLIC_WORLD_ENV` in `.env.local`. The Portal must have the `promise-participant` action. The backend signs a fresh RP challenge, verifies the complete IDKit result with World, checks the action/environment/nonce/nullifier, then issues a 30-day HttpOnly session cookie. The top-right Live check toggle optionally requests fresh user presence during verification.
 
-## Hackathon failure path
+**Account recovery limitation:** `proofOfHuman` uniqueness actions can be completed once per person. The 30-day local cookie lets the user revisit their records while it remains valid, but a lost/expired cookie cannot currently reauthenticate through the same one-time action. Before real users rely on long-term history, add a World ID session-proof recovery flow or an appropriate repeatable sign-in configuration. The server-side SQLite file also needs backups and a persistent host volume. No real World ID proof was exercised by the automated HTTP checks.
 
-Cancel/reject World verification: the Promise does not advance. The protected action only runs from `onSuccess` after `handleVerify` has accepted the backend verification.
+## Design
 
-The app also rejects:
-- accepting a Promise that is not open
-- self-borrowing when the lender/borrower proof resolves to the same nullifier
-- confirming a return before the borrower requests it
-
-## Important MVP limitation
-
-The Promise store is intentionally in-memory to keep the hackathon prototype tiny. A server restart clears records. Before a public deployment, replace `lib/store.ts` with Postgres/Redis and add authenticated role/session binding so only the actual borrower can request a return and only the actual lender can confirm it.
-
-For judging, the next hardening step should be session-based role authorization after World verification.
-
-## World prize debrief checklist
-
-Add `FEEDBACK.md` before submission with:
-- time to first successful IDKit verification
-- friction encountered
-- missing capability/documentation
-- the single improvement with greatest impact
-
-## Product line
-
-> Because sometimes you don't need to know who someone is. You just need a human to stand behind a promise.
+- **One account, two roles:** A verified person can create requests as borrower and join other requests as lender. The history list labels each role.
+- **Shared request page:** The QR opens `/p/[id]` on a second device. Both devices see the same persisted state; controls appear only for the relevant role.
+- **Physical trust moments:** Lender's agreement records intended handover, borrower's receipt activates the loan, and lender's return confirmation completes it. These buttons record human attestations; World ID does not verify the physical object.
+- **Data model:** `people` stores an app-scoped World nullifier; `promises` stores item, deadline, memo, status and both person IDs; `sessions` stores hashed bearer tokens; `challenges` prevents request replay. Public DTOs expose status and role only.

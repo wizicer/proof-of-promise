@@ -1,8 +1,4 @@
 import { NextResponse } from "next/server";
-import { getPromise, putPromise } from "@/lib/store";
-export async function POST(_:Request,{params}:{params:Promise<{id:string}>}) {
-  const {id}=await params; const p=getPromise(id);
-  if(!p) return NextResponse.json({error:"Not found"},{status:404});
-  if(p.status!=="RETURN_REQUESTED") return NextResponse.json({error:"Return has not been requested"},{status:409});
-  p.status="FULFILLED"; p.fulfilledAt=new Date().toISOString(); putPromise(p); return NextResponse.json(p);
-}
+import { currentPerson, transition } from "@/lib/store";
+export const runtime="nodejs";
+export async function POST(_:Request,{params}:{params:Promise<{id:string}>}){const person=await currentPerson();if(!person)return NextResponse.json({error:"Verify World ID first"},{status:401});return transition((await params).id,"RETURN_REQUESTED","FULFILLED",person,"lender")?NextResponse.json({success:true}):NextResponse.json({error:"Only the lender can confirm return"},{status:409});}

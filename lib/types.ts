@@ -1,22 +1,13 @@
-export type PromiseStatus =
-  | "OPEN"
-  | "ACTIVE"
-  | "RETURN_REQUESTED"
-  | "FULFILLED";
-
-export type HumanProof = {
-  nullifier: string;
-  verifiedAt: string;
-};
-
+export type PromiseStatus = "REQUESTED" | "HANDOVER_PENDING" | "ACTIVE" | "RETURN_REQUESTED" | "FULFILLED";
 export type HumanPromise = {
   id: string;
   item: string;
   deadline: string;
-  note?: string;
+  note: string;
   createdAt: string;
   status: PromiseStatus;
-  lender?: HumanProof;
-  borrower?: HumanProof;
+  borrowerVerified: boolean;
+  lenderVerified: boolean;
   fulfilledAt?: string;
+  myRole?: "borrower" | "lender";
 };

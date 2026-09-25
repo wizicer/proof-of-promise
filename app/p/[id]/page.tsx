@@ -1,87 +1,19 @@
 "use client";
-import { use, useEffect, useState } from "react";
-import { QRCodeSVG } from "qrcode.react";
+import {use,useEffect,useState} from "react";
+import Link from "next/link";
+import {QRCodeSVG} from "qrcode.react";
 import HumanVerifyButton from "@/components/HumanVerifyButton";
-import type { HumanPromise } from "@/lib/types";
-
-export default function PromisePage({ params }: { params: Promise<{id:string}> }) {
-  const { id } = use(params);
-  const [p, setP] = useState<HumanPromise | null>(null);
-  const [error, setError] = useState("");
-  const [base, setBase] = useState("");
-
-  async function refresh() {
-    const r = await fetch(`/api/promises/${id}`, {cache:"no-store"});
-    if (!r.ok) { setError("Promise not found"); return; }
-    setP(await r.json());
-  }
-  useEffect(()=>{ setBase(process.env.NEXT_PUBLIC_BASE_URL || window.location.origin); refresh(); const t=setInterval(refresh,2500); return()=>clearInterval(t); },[id]);
-
-  async function mutate(path:string) {
-    const r = await fetch(`/api/promises/${id}/${path}`, {method:"POST"});
-    if (!r.ok) { const d=await r.json(); setError(d.error||"Action failed"); return; }
-    await refresh();
-  }
-
-  if (!p) return <main className="shell"><div className="card">{error || "Loading promise…"}</div></main>;
-
-  return <main className="shell">
-    <div className="eyebrow">Proof of Promise #{p.id.slice(0,8)}</div>
-    <section className="card">
-      <span className={`status ${p.status}`}>{p.status.replaceAll("_"," ")}</span>
-      <div className="bigitem">🔌 {p.item}</div>
-      <p className="muted">{p.note || "A human is willing to lend this to another human."}</p>
-      <div className="meta">
-        <div><span>Return before</span><strong>{new Date(p.deadline).toLocaleString()}</strong></div>
-        <div><span>Lender</span><strong>{p.lender ? "Human verified ✓" : "Waiting"}</strong></div>
-        <div><span>Borrower</span><strong>{p.borrower ? "Human verified ✓" : "Waiting"}</strong></div>
-      </div>
-
-      {p.status === "OPEN" && <>
-        <div className="divider"/>
-        <div className="grid">
-          <div>
-            <h3>Borrow this item</h3>
-            <p className="muted">You promise to return it by the time above. No name or phone number is shared.</p>
-            <HumanVerifyButton
-              label="Prove I'm human & accept"
-              signal={p.id}
-              onVerified={async proof => {
-                const r=await fetch(`/api/promises/${p.id}/accept`,{
-                  method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({proof})
-                });
-                if(!r.ok) throw new Error("Could not accept");
-                await refresh();
-              }}
-            />
-          </div>
-          <div className="center">
-            <div className="qr"><QRCodeSVG value={`${base}/p/${p.id}`} size={190}/></div>
-            <p className="tiny">Scan to borrow from this human</p>
-          </div>
-        </div>
-      </>}
-
-      {p.status === "ACTIVE" && <>
-        <div className="success">Promise made. 🤝 Two verified humans are now behind this agreement.</div>
-        <div className="actions"><button className="btn primary" onClick={()=>mutate("request-return")}>I'm returning it</button></div>
-      </>}
-
-      {p.status === "RETURN_REQUESTED" && <>
-        <div className="success">Borrower says the item is being returned.</div>
-        <p><strong>Lender:</strong> confirm only after the physical item is back in your hands.</p>
-        <div className="actions"><button className="btn primary" onClick={()=>mutate("confirm")}>Confirm return</button></div>
-      </>}
-
-      {p.status === "FULFILLED" && <div className="proof center">
-        <div className="eyebrow">Proof of Promise</div>
-        <h2>Promise fulfilled. ✓</h2>
-        <div className="check">Human A ✓ &nbsp; ↔ &nbsp; Human B ✓</div>
-        <p><strong>{p.item}</strong> was returned.</p>
-        <p className="muted">No names. No phone numbers. No passports.</p>
-        <p className="tiny">Fulfilled {p.fulfilledAt ? new Date(p.fulfilledAt).toLocaleString() : ""}</p>
-      </div>}
-      {error && <div className="error">{error}</div>}
-    </section>
-  </main>;
+import type {HumanPromise} from "@/lib/types";
+export default function PromisePage({params}:{params:Promise<{id:string}>}){
+ const {id}=use(params);const [p,setP]=useState<HumanPromise|null>(null),[auth,setAuth]=useState(false),[error,setError]=useState(""),[busy,setBusy]=useState(false),[base,setBase]=useState("");
+ async function refresh(){const [a,r]=await Promise.all([fetch("/api/session",{cache:"no-store"}),fetch(`/api/promises/${id}`,{cache:"no-store"})]);setAuth((await a.json()).authenticated);if(r.ok)setP(await r.json());else setError("Request not found");}
+ useEffect(()=>{setBase(window.location.origin);refresh();const timer=setInterval(refresh,3000);return()=>clearInterval(timer)},[id]);
+ async function act(action:string){setBusy(true);setError("");try{const r=await fetch(`/api/promises/${id}/${action}`,{method:"POST"});if(!r.ok){const d=await r.json();throw new Error(d.error||"Action failed")}await refresh()}catch(e){setError(e instanceof Error?e.message:"Action failed")}finally{setBusy(false)}}
+ if(!p)return <main className="shell"><div className="card">{error||"Loading…"}</div></main>;
+ const borrower=p.myRole==="borrower",lender=p.myRole==="lender";
+ return <main className="shell"><Link href="/" className="back-link">← My promises</Link><section className="workspace"><div className="workspace-head"><div className="section-kicker">PROOF OF PROMISE · C2C</div><h2>{p.item}</h2><p>{p.note||"A real-world borrowing request between two humans."}</p><span className={`status ${p.status}`}>{p.status.replaceAll("_"," ")}</span></div><div className="form-area"><div className="summary"><div><span>Return before</span><strong>{new Date(p.deadline).toLocaleString()}</strong></div><div><span>Borrower</span><strong>World ID verified ✓</strong></div><div><span>Lender</span><strong>{p.lenderVerified?"World ID verified ✓":"Waiting"}</strong></div></div></div>
+ <div className="stage"><div className="stage-banner">{p.status==="REQUESTED"?"Borrower shows the QR; lender scans and reviews the terms.":p.status==="HANDOVER_PENDING"?"Lender agreed to hand over the item. Borrower must confirm receipt.":p.status==="ACTIVE"?"Borrowing is active. The item is with the borrower.":p.status==="RETURN_REQUESTED"?"Borrower requested return. Lender must inspect and confirm receipt.":"Promise fulfilled by both participants."}</div><div className="stage-grid">
+ <article className={`person-card ${borrower?"active":""}`}><div className="person-head"><div className="avatar borrower">◉</div><div><strong>Borrower</strong><small>Promise maker</small></div></div><div className="person-body"><div className="micro">{borrower?"YOUR SIDE":"BORROWER SIDE"}</div>{p.status==="REQUESTED"?<><h3>Show this QR to a lender</h3><p>The lender opens your request on their own device.</p><div className="qr-box">{base&&<QRCodeSVG value={`${base}/p/${p.id}`} size={132}/>}</div><p className="tiny">{base}/p/{p.id}</p></>:p.status==="HANDOVER_PENDING"?<><h3>Confirm physical receipt</h3><p>Inspect the item first. Confirm only after you have it in hand.</p>{borrower&&<button className="btn primary" disabled={busy} onClick={()=>act("receive")}>I received the item →</button>}</>:p.status==="ACTIVE"?<><h3>Item in use</h3><p>Hand the item back in person before requesting return.</p>{borrower&&<button className="btn primary" disabled={busy} onClick={()=>act("request-return")}>Item handed back · request return →</button>}</>:p.status==="RETURN_REQUESTED"?<><h3>Waiting for lender</h3><p>The lender needs to inspect and confirm the returned item.</p>{borrower&&<button className="btn secondary" disabled={busy} onClick={()=>act("cancel-return")}>Cancel return request</button>}</>:<><h3>Commitment fulfilled ✓</h3><p>The lender confirmed receipt of the returned item.</p></>}</div></article>
+ <article className={`person-card ${lender?"active":""}`}><div className="person-head"><div className="avatar lender">▣</div><div><strong>Lender</strong><small>Promise holder</small></div></div><div className="person-body"><div className="micro">{lender?"YOUR SIDE":"LENDER SIDE"}</div>{p.status==="REQUESTED"?<><h3>Agree to lend?</h3><p>Review the item and deadline. Verify your World ID, then hand the item over in person.</p>{!auth?<HumanVerifyButton label="Verify World ID to lend" onVerified={refresh}/>:!borrower?<button className="btn primary" disabled={busy} onClick={()=>act("lend")}>Agree to lend & hand over →</button>:<p className="notice">You cannot lend to yourself.</p>}</>:p.status==="HANDOVER_PENDING"?<><h3>Waiting for borrower</h3><p>Ask the borrower to confirm receipt on their device. If they do not, take back the item and cancel.</p>{lender&&<button className="btn secondary" disabled={busy} onClick={()=>act("cancel-handover")}>Borrower did not confirm · cancel</button>}</>:p.status==="ACTIVE"?<><h3>Waiting for return</h3><p>The borrower has confirmed receiving the item.</p></>:p.status==="RETURN_REQUESTED"?<><h3>Confirm returned item</h3><p>Inspect the physical item before completing the promise.</p>{lender&&<button className="btn primary" disabled={busy} onClick={()=>act("confirm")}>Item received · complete →</button>}</>:<><h3>Proof of Promise ✓</h3><p>Returned and confirmed {p.fulfilledAt?new Date(p.fulfilledAt).toLocaleString():""}.</p></>}</div></article>
+ </div></div>{error&&<div className="error">{error}</div>}</section></main>;
 }
