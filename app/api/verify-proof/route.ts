@@ -4,11 +4,6 @@ import { consumeChallenge, login, setSessionCookie } from "@/lib/store";
 export const runtime = "nodejs";
 const ACTION="promise-participant";
 export async function POST(req:Request) {
-  if(process.env.NEXT_PUBLIC_DEMO_MODE==="true") {
-    const {token}=login(`demo-${crypto.randomUUID()}`);
-    await setSessionCookie(token);
-    return NextResponse.json({success:true,demo:true});
-  }
   const {idkitResponse:proof,requireUserPresence}=await req.json().catch(()=>({}));
   if(!proof || proof.action!==ACTION || typeof proof.nonce!=="string") return NextResponse.json({error:"Invalid proof context"},{status:400});
   const rpId=process.env.WORLD_RP_ID;
@@ -19,8 +14,8 @@ export async function POST(req:Request) {
   if(requireUserPresence===true && proof.user_presence_completed!==true) return NextResponse.json({error:"Live check incomplete"},{status:400});
   const nullifier=data.nullifier || data.results?.find((r:{identifier:string;success:boolean;nullifier?:string})=>r.identifier==="proof_of_human"&&r.success)?.nullifier;
   if(typeof nullifier!=="string" || !/^0x[0-9a-fA-F]{64}$/.test(nullifier)) return NextResponse.json({error:"Verified nullifier missing"},{status:400});
-  if(!consumeChallenge(proof.nonce,ACTION)) return NextResponse.json({error:"Proof request expired or already used"},{status:409});
-  const {token}=login(BigInt(nullifier).toString(10));
+  if(!await consumeChallenge(proof.nonce,ACTION)) return NextResponse.json({error:"Proof request expired or already used"},{status:409});
+  const {token}=await login(BigInt(nullifier).toString(10));
   await setSessionCookie(token);
   return NextResponse.json({success:true});
 }

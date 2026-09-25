@@ -10,7 +10,7 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:3000`. In demo mode, use **two separate browser profiles** for the borrower and lender; ordinary windows share the same session cookie. For phone QR scanning, use a public HTTPS URL rather than localhost. Data persists in `.data/promises.sqlite` (or `PROMISE_DB_PATH`). Keep that path on a persistent volume for deployment.
+Open `http://localhost:3000`. Use two World ID accounts in separate browser profiles for the borrower and lender; ordinary windows share the same session cookie. For phone QR scanning, use a public HTTPS URL rather than localhost. Data persists in `.data/store.json` (or `PROMISE_DATA_PATH`). Keep that path on a persistent volume for deployment.
 
 ## C2C flow
 
@@ -20,13 +20,13 @@ Open `http://localhost:3000`. In demo mode, use **two separate browser profiles*
 4. Borrower hands the item back and requests return confirmation.
 5. Lender inspects the item and confirms return. Both see the fulfilled record in **My Promises**.
 
-The lender may cancel an unconfirmed handover; the borrower may cancel a pending return request. Both roles are linked to the server-side World ID account record. The public request API never returns a nullifier. Each state transition checks the authenticated role and expected prior state in one SQLite statement.
+The lender may cancel an unconfirmed handover; the borrower may cancel a pending return request. Both roles are linked to the server-side World ID account record. The public request API never returns a nullifier. Each state transition checks the authenticated role and expected prior state under a file lock with an atomic JSON-file replacement.
 
 ## World ID setup
 
-Set `NEXT_PUBLIC_DEMO_MODE=false` and fill `NEXT_PUBLIC_WORLD_APP_ID`, `WORLD_RP_ID`, `WORLD_RP_SIGNING_KEY`, and `NEXT_PUBLIC_WORLD_ENV` in `.env.local`. The Portal must have the `promise-participant` action. The backend signs a fresh RP challenge, verifies the complete IDKit result with World, checks the action/environment/nonce/nullifier, then issues a 30-day HttpOnly session cookie. The top-right Live check toggle optionally requests fresh user presence during verification.
+Fill `NEXT_PUBLIC_WORLD_APP_ID`, `WORLD_RP_ID`, `WORLD_RP_SIGNING_KEY`, and `NEXT_PUBLIC_WORLD_ENV` in `.env.local`. The Portal must have the `promise-participant` action. The backend signs a fresh RP challenge, verifies the complete IDKit result with World, checks the action/environment/nonce/nullifier, then issues a 30-day HttpOnly session cookie. The top-right Live check toggle optionally requests fresh user presence during verification.
 
-**Account recovery limitation:** `proofOfHuman` uniqueness actions can be completed once per person. The 30-day local cookie lets the user revisit their records while it remains valid, but a lost/expired cookie cannot currently reauthenticate through the same one-time action. Before real users rely on long-term history, add a World ID session-proof recovery flow or an appropriate repeatable sign-in configuration. The server-side SQLite file also needs backups and a persistent host volume. No real World ID proof was exercised by the automated HTTP checks.
+**Account recovery limitation:** `proofOfHuman` uniqueness actions can be completed once per person. The 30-day local cookie lets the user revisit their records while it remains valid, but a lost/expired cookie cannot currently reauthenticate through the same one-time action. Before real users rely on long-term history, add a World ID session-proof recovery flow or an appropriate repeatable sign-in configuration. The server-side JSON file also needs backups and a persistent host volume. Real World ID success requires a person to complete the World App flow; automated tests check only server-side rejection paths.
 
 ## Design
 

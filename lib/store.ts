@@ -1,74 +1,140 @@
 import "server-only";
-import { DatabaseSync } from "node:sqlite";
-import { mkdirSync } from "node:fs";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { mkdir, open, readFile, rename, stat, unlink } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { createHash, randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
 import type { HumanPromise, PromiseStatus } from "./types";
 
-const path = process.env.PROMISE_DB_PATH || join(process.cwd(), ".data", "promises.sqlite");
-mkdirSync(dirname(path), { recursive: true });
-const db = new DatabaseSync(path);
-db.exec(`PRAGMA journal_mode = WAL;
-CREATE TABLE IF NOT EXISTS people (id TEXT PRIMARY KEY, world_nullifier TEXT UNIQUE NOT NULL, created_at TEXT NOT NULL);
-CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, person_id TEXT NOT NULL, expires_at INTEGER NOT NULL);
-CREATE TABLE IF NOT EXISTS challenges (nonce TEXT PRIMARY KEY, action TEXT NOT NULL, expires_at INTEGER NOT NULL, used INTEGER NOT NULL DEFAULT 0);
-CREATE TABLE IF NOT EXISTS promises (id TEXT PRIMARY KEY, item TEXT NOT NULL, deadline TEXT NOT NULL, note TEXT NOT NULL, created_at TEXT NOT NULL, status TEXT NOT NULL, borrower_id TEXT NOT NULL, lender_id TEXT, fulfilled_at TEXT);`);
+const path = process.env.PROMISE_DATA_PATH || join(process.cwd(), ".data", "store.json");
+const lockPath = `${path}.lock`;
+const hash = (value: string) => createHash("sha256").update(value).digest("hex");
 
-type Row = { id:string; item:string; deadline:string; note:string; created_at:string; status:PromiseStatus; borrower_id:string; lender_id:string|null; fulfilled_at:string|null };
-const hash = (s:string) => createHash("sha256").update(s).digest("hex");
-export function createChallenge(nonce:string, action:string, expiresAt:number) {
-  db.prepare("INSERT INTO challenges (nonce,action,expires_at) VALUES (?,?,?)").run(nonce,action,expiresAt);
+type Person = { id: string; worldNullifier: string; createdAt: string };
+type Session = { tokenHash: string; personId: string; expiresAt: number };
+type Challenge = { nonce: string; action: string; expiresAt: number; used: boolean };
+type Record = { id: string; item: string; deadline: string; note: string; createdAt: string; status: PromiseStatus; borrowerId: string; lenderId?: string; fulfilledAt?: string };
+type Data = { version: 1; people: Person[]; sessions: Session[]; challenges: Challenge[]; promises: Record[] };
+const empty = (): Data => ({ version: 1, people: [], sessions: [], challenges: [], promises: [] });
+
+async function read(): Promise<Data> {
+  try {
+    const data: unknown = JSON.parse(await readFile(path, "utf8"));
+    if (!data || typeof data !== "object" || (data as Data).version !== 1 || !Array.isArray((data as Data).promises) || !Array.isArray((data as Data).people) || !Array.isArray((data as Data).sessions) || !Array.isArray((data as Data).challenges)) throw new Error("Invalid promise data file");
+    return data as Data;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return empty();
+    throw error;
+  }
 }
-export function consumeChallenge(nonce:string, action:string) {
-  return db.prepare("UPDATE challenges SET used=1 WHERE nonce=? AND action=? AND used=0 AND expires_at>?").run(nonce,action,Math.floor(Date.now()/1000)).changes===1;
+
+// A lock and atomic rename keep state transitions consistent across server processes.
+async function change<T>(update: (data: Data) => T): Promise<T> {
+  await mkdir(dirname(path), { recursive: true });
+  const started = Date.now();
+  let lock: Awaited<ReturnType<typeof open>> | undefined;
+  while (!lock) {
+    try { lock = await open(lockPath, "wx", 0o600); }
+    catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+      const age = await stat(lockPath).then(s => Date.now() - s.mtimeMs).catch(() => 0);
+      if (age > 30_000) await unlink(lockPath).catch(() => {});
+      if (Date.now() - started > 5_000) throw new Error("Promise data is busy");
+      await new Promise(resolve => setTimeout(resolve, 20));
+    }
+  }
+  const temp = `${path}.${randomUUID()}.tmp`;
+  try {
+    const data = await read();
+    const result = update(data);
+    const file = await open(temp, "wx", 0o600);
+    try { await file.writeFile(JSON.stringify(data, null, 2)); await file.sync(); }
+    finally { await file.close(); }
+    await rename(temp, path);
+    return result;
+  } finally {
+    await unlink(temp).catch(() => {});
+    await lock.close();
+    await unlink(lockPath).catch(() => {});
+  }
 }
-export function login(nullifier:string) {
-  const person = db.prepare("SELECT id FROM people WHERE world_nullifier=?").get(nullifier) as {id:string}|undefined;
-  const id = person?.id || crypto.randomUUID();
-  if (!person) db.prepare("INSERT INTO people VALUES (?,?,?)").run(id,nullifier,new Date().toISOString());
-  const token=randomBytes(32).toString("base64url");
-  db.prepare("INSERT INTO sessions VALUES (?,?,?)").run(hash(token),id,Date.now()+30*86400_000);
-  return {id,token};
+
+export async function createChallenge(nonce: string, action: string, expiresAt: number) {
+  await change(data => { data.challenges = data.challenges.filter(c => c.expiresAt > Math.floor(Date.now() / 1000)); data.challenges.push({ nonce, action, expiresAt, used: false }); });
 }
-export async function setSessionCookie(token:string) {
-  (await cookies()).set("bfa_session",token,{httpOnly:true,sameSite:"lax",secure:process.env.NODE_ENV==="production",path:"/",maxAge:30*86400});
+export async function consumeChallenge(nonce: string, action: string) {
+  return change(data => {
+    const challenge = data.challenges.find(c => c.nonce === nonce && c.action === action && !c.used && c.expiresAt > Math.floor(Date.now() / 1000));
+    if (!challenge) return false;
+    challenge.used = true;
+    return true;
+  });
+}
+export async function login(nullifier: string) {
+  return change(data => {
+    let person = data.people.find(p => p.worldNullifier === nullifier);
+    if (!person) { person = { id: randomUUID(), worldNullifier: nullifier, createdAt: new Date().toISOString() }; data.people.push(person); }
+    const token = randomBytes(32).toString("base64url");
+    data.sessions = data.sessions.filter(s => s.expiresAt > Date.now());
+    data.sessions.push({ tokenHash: hash(token), personId: person.id, expiresAt: Date.now() + 30 * 86400_000 });
+    return { id: person.id, token };
+  });
+}
+export async function setSessionCookie(token: string) {
+  (await cookies()).set("bfa_session", token, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 30 * 86400 });
 }
 export async function currentPerson() {
-  const token=(await cookies()).get("bfa_session")?.value;
+  const token = (await cookies()).get("bfa_session")?.value;
   if (!token) return null;
-  const row=db.prepare("SELECT person_id FROM sessions WHERE token_hash=? AND expires_at>?").get(hash(token),Date.now()) as {person_id:string}|undefined;
-  return row?.person_id || null;
+  const session = (await read()).sessions.find(s => s.tokenHash === hash(token) && s.expiresAt > Date.now());
+  return session?.personId || null;
 }
 export async function logout() {
-  const jar=await cookies(); const token=jar.get("bfa_session")?.value;
-  if(token) db.prepare("DELETE FROM sessions WHERE token_hash=?").run(hash(token));
+  const jar = await cookies();
+  const token = jar.get("bfa_session")?.value;
+  if (token) await change(data => { data.sessions = data.sessions.filter(s => s.tokenHash !== hash(token)); });
   jar.delete("bfa_session");
 }
-function view(row:Row, personId?:string|null):HumanPromise {
-  return {id:row.id,item:row.item,deadline:row.deadline,note:row.note,createdAt:row.created_at,status:row.status,borrowerVerified:true,lenderVerified:!!row.lender_id,fulfilledAt:row.fulfilled_at||undefined,myRole:personId===row.borrower_id?"borrower":personId===row.lender_id?"lender":undefined};
+function view(row: Record, personId?: string | null): HumanPromise {
+  return { id: row.id, item: row.item, deadline: row.deadline, note: row.note, createdAt: row.createdAt, status: row.status, borrowerVerified: true, lenderVerified: !!row.lenderId, fulfilledAt: row.fulfilledAt, myRole: personId === row.borrowerId ? "borrower" : personId === row.lenderId ? "lender" : undefined };
 }
-export function getPromise(id:string,personId?:string|null) {
-  const row=db.prepare("SELECT * FROM promises WHERE id=?").get(id) as Row|undefined;
-  return row?view(row,personId):null;
+export async function getPromise(id: string, personId?: string | null) {
+  const row = (await read()).promises.find(p => p.id === id);
+  return row ? view(row, personId) : null;
 }
-export function listPromises(personId:string) {
-  const rows=db.prepare("SELECT * FROM promises WHERE borrower_id=? OR lender_id=? ORDER BY created_at DESC").all(personId,personId) as Row[];
-  return rows.map(row=>view(row,personId));
+export async function listPromises(personId: string) {
+  return (await read()).promises.filter(p => p.borrowerId === personId || p.lenderId === personId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map(p => view(p, personId));
 }
-export function createPromise(personId:string,item:string,deadline:string,note:string) {
-  const id=crypto.randomUUID(), createdAt=new Date().toISOString();
-  db.prepare("INSERT INTO promises VALUES (?,?,?,?,?,?,?,?,?)").run(id,item,deadline,note,createdAt,"REQUESTED",personId,null,null);
-  return getPromise(id,personId)!;
+export async function createPromise(personId: string, item: string, deadline: string, note: string) {
+  return change(data => {
+    const row: Record = { id: randomUUID(), item, deadline, note, createdAt: new Date().toISOString(), status: "REQUESTED", borrowerId: personId };
+    data.promises.push(row);
+    return view(row, personId);
+  });
 }
-export function transition(id:string,from:PromiseStatus,to:PromiseStatus,personId:string,role:"borrower"|"lender") {
-  const actor=role==="borrower"?"borrower_id":"lender_id";
-  const result=db.prepare(`UPDATE promises SET status=?, fulfilled_at=CASE WHEN ?='FULFILLED' THEN ? ELSE fulfilled_at END WHERE id=? AND status=? AND ${actor}=?`).run(to,to,new Date().toISOString(),id,from,personId);
-  return result.changes===1;
+export async function transition(id: string, from: PromiseStatus, to: PromiseStatus, personId: string, role: "borrower" | "lender") {
+  return change(data => {
+    const row = data.promises.find(p => p.id === id && p.status === from && (role === "borrower" ? p.borrowerId : p.lenderId) === personId);
+    if (!row) return false;
+    row.status = to;
+    if (to === "FULFILLED") row.fulfilledAt = new Date().toISOString();
+    return true;
+  });
 }
-export function joinPromise(id:string,personId:string) {
-  return db.prepare("UPDATE promises SET lender_id=?, status='HANDOVER_PENDING' WHERE id=? AND status='REQUESTED' AND borrower_id<>? AND lender_id IS NULL").run(personId,id,personId).changes===1;
+export async function joinPromise(id: string, personId: string) {
+  return change(data => {
+    const row = data.promises.find(p => p.id === id && p.status === "REQUESTED" && p.borrowerId !== personId && !p.lenderId);
+    if (!row) return false;
+    row.lenderId = personId;
+    row.status = "HANDOVER_PENDING";
+    return true;
+  });
 }
-export function cancelHandover(id:string,personId:string) {
-  return db.prepare("UPDATE promises SET lender_id=NULL,status='REQUESTED' WHERE id=? AND status='HANDOVER_PENDING' AND lender_id=?").run(id,personId).changes===1;
+export async function cancelHandover(id: string, personId: string) {
+  return change(data => {
+    const row = data.promises.find(p => p.id === id && p.status === "HANDOVER_PENDING" && p.lenderId === personId);
+    if (!row) return false;
+    delete row.lenderId;
+    row.status = "REQUESTED";
+    return true;
+  });
 }

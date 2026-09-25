@@ -2,6 +2,8 @@
 
 **Date:** 2026-09-25
 
+**Historical scope:** This report describes the earlier in-memory prototype. The current C2C implementation has server-side World verification, role-bound sessions, and persistent JSON storage; its remaining account recovery limitation is documented in README.md.
+
 **Scope:** The current Next.js Promise and World ID integration in this repository.
 **Method:** Manual source review of the API routes, IDKit integration, and in-memory store. This report does not claim a penetration test or a successful end-to-end production World ID verification.
 
