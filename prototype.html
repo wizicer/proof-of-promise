@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Borrow from a Human · 交互原型</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./prototype.css">
+  <script defer src="./prototype.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="./prototype.html" aria-label="Borrow from a Human 首页"><span class="brand-mark">✳</span><span>borrow<span class="brand-light">from a human</span></span></a>
+      <div class="top-right"><span class="prototype-pill"><i></i> INTERACTIVE PROTOTYPE</span><span class="top-divider"></span><span class="top-caption">World ID 借还体验</span></div>
+    </header>
+
+    <main>
+      <section class="intro">
+        <div class="eyebrow"><span class="eyebrow-line"></span> PROOF OF PROMISE / 产品体验原型</div>
+        <h1>借出一件物品，<br><em>连接两个真实的人。</em></h1>
+        <p>无需押金、手机号或公开身份。用 World ID 确认彼此是真人，让面对面的借还更简单。</p>
+        <div class="intro-meta"><span><b>01</b> 选择场景</span><span class="meta-arrow">→</span><span><b>02</b> 模拟双方操作</span><span class="meta-arrow">→</span><span><b>03</b> 完成借还</span></div>
+      </section>
+
+      <section class="workspace" aria-label="借还流程模拟器">
+        <div class="workspace-head">
+          <div><div class="section-kicker">THE EXPERIENCE</div><h2>选择借还场景</h2></div>
+          <div class="tabs" role="tablist" aria-label="借还场景">
+            <button id="tab-c2c" class="tab active" role="tab" aria-selected="true" aria-controls="scenario" data-tab="c2c"><span class="tab-icon">↔</span><span>C2C <small>人与人之间</small></span></button>
+            <button id="tab-b2c" class="tab" role="tab" aria-selected="false" aria-controls="scenario" data-tab="b2c"><span class="tab-icon">▣</span><span>B2C <small>商家与顾客</small></span></button>
+          </div>
+        </div>
+        <div id="scenario" role="tabpanel" aria-labelledby="tab-c2c"></div>
+      </section>
+      <footer><span>✳ borrow from a human</span><span>这是可点击的体验原型 · 所有 World ID 验证与扫码均为模拟</span></footer>
+    </main>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
