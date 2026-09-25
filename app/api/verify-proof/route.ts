@@ -15,5 +15,7 @@ export async function POST(req:Request) {
   }
   if(data.environment && data.environment !== (process.env.NEXT_PUBLIC_WORLD_ENV || "staging"))
     return NextResponse.json({error:"World ID environment mismatch"},{status:400});
+  if(idkitResponse?.user_presence_completed !== true)
+    return NextResponse.json({error:"World ID user presence check was not completed"},{status:400});
   return NextResponse.json({success:true,verification:data});
 }

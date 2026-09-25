@@ -49,6 +49,7 @@ export default function HumanVerifyButton({ label, action, signal, onVerified }:
       action={action}
       rp_context={rp}
       allow_legacy_proofs={true}
+      require_user_presence={true}
       environment={(process.env.NEXT_PUBLIC_WORLD_ENV || "staging") as any}
       preset={proofOfHuman({signal})}
       handleVerify={async result => {
