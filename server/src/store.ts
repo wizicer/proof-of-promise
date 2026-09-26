@@ -1,7 +1,7 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { mkdir, open, readFile, rename, stat, unlink } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
-import type { BorrowerHistory, HumanPromise, PromiseKind, PromiseRole, PromiseStatus, ShowUpDetails } from "./types.js";
+import type { BorrowerHistory, HumanPromise, PromiseKind, PromiseRole, PromiseStatus, ShowUpDetails } from "@borrow-from-a-human/shared";
 import { projectRoot } from "./config.js";
 
 type Person = { id: string; sessionId?: string; worldNullifier?: string; oidcSub?: string; createdAt: string };

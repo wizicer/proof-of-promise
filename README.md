@@ -6,6 +6,7 @@ The repository is an npm workspaces monorepo with two applications:
 
 - `ui/` — React 19, Vite, Tailwind CSS, Shadcn UI, and World ID IDKit
 - `server/` — Node.js, Express, TypeScript, and atomic JSON persistence
+- `packages/shared/` — shared domain types and status definitions
 - `Legacy/` — the archived Next.js implementation
 
 ## Local development

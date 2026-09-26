@@ -10,6 +10,7 @@
     "test": "tsx --test src/**/*.test.ts"
   },
   "dependencies": {
+    "@borrow-from-a-human/shared": "1.0.0",
     "@worldcoin/idkit-core": "^4.0.0",
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.2.2",
