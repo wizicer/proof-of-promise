@@ -5,6 +5,9 @@ import {
   ChevronRight, 
   ChevronLeft, 
   BatteryCharging, 
+  BatteryMedium,
+  Plug,
+  Umbrella,
   RotateCcw, 
   IdCard, 
   FileText, 
@@ -18,6 +21,13 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+const ROTATING_ITEMS = [
+  { label: "charger", icon: BatteryCharging, color: "text-emerald-400", border: "border-emerald-500/30", bg: "from-emerald-500/20 to-teal-500/5", glow: "bg-emerald-500/20" },
+  { label: "power bank", icon: BatteryMedium, color: "text-cyan-400", border: "border-cyan-500/30", bg: "from-cyan-500/20 to-blue-500/5", glow: "bg-cyan-500/20" },
+  { label: "adapter", icon: Plug, color: "text-amber-400", border: "border-amber-500/30", bg: "from-amber-500/20 to-yellow-500/5", glow: "bg-amber-500/20" },
+  { label: "umbrella", icon: Umbrella, color: "text-violet-400", border: "border-violet-500/30", bg: "from-violet-500/20 to-purple-500/5", glow: "bg-violet-500/20" },
+];
+
 interface StoryModalProps {
   open: boolean;
   onClose: () => void;
@@ -26,10 +36,19 @@ interface StoryModalProps {
 export function StoryModal({ open, onClose }: StoryModalProps) {
   const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [itemIndex, setItemIndex] = useState(0);
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
 
   const totalSlides = 5;
+
+  useEffect(() => {
+    if (!open) return;
+    const interval = setInterval(() => {
+      setItemIndex((prev) => (prev + 1) % ROTATING_ITEMS.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [open]);
 
   useEffect(() => {
     if (open) {
@@ -137,16 +156,57 @@ export function StoryModal({ open, onClose }: StoryModalProps) {
           >
             {/* Slide 1 */}
             <div className="flex h-full w-full shrink-0 flex-col items-center justify-between px-6 py-6 text-center">
-              <div className="my-auto flex flex-col items-center max-w-xs">
-                <div className="relative mb-8 grid size-28 place-items-center rounded-3xl bg-gradient-to-br from-emerald-500/20 to-teal-500/5 p-4 border border-emerald-500/30 shadow-[0_0_40px_rgba(16,185,129,0.15)]">
-                  <div className="absolute -inset-1 rounded-3xl bg-emerald-500/20 blur-xl animate-pulse" />
-                  <BatteryCharging className="relative size-14 text-emerald-400" />
+              <div className="my-auto flex flex-col items-center w-full max-w-xs">
+                {/* Rotating Big Icon with Smooth Transition */}
+                <div className="relative mb-8 h-28 w-28 overflow-hidden rounded-3xl">
+                  {ROTATING_ITEMS.map((item, idx) => {
+                    const IconComponent = item.icon;
+                    const isActive = idx === itemIndex;
+                    return (
+                      <div
+                        key={item.label}
+                        className={`absolute inset-0 grid place-items-center rounded-3xl bg-gradient-to-br ${item.bg} border ${item.border} p-4 transition-all duration-700 ease-out ${
+                          isActive
+                            ? "opacity-100 translate-y-0 scale-100 rotate-0"
+                            : "opacity-0 translate-y-8 scale-90 -rotate-6 pointer-events-none"
+                        }`}
+                      >
+                        <div className={`absolute -inset-1 rounded-3xl ${item.glow} blur-xl animate-pulse`} />
+                        <IconComponent className={`relative size-14 ${item.color} transition-transform duration-500`} />
+                      </div>
+                    );
+                  })}
                 </div>
 
-                <h2 className="text-2xl sm:text-3xl font-black leading-tight tracking-tight">
-                  Would you lend your charger to a stranger?
+                {/* Three-line Question Heading: Line 1 'Would you lend your', Line 2 Centered Rolling Item, Line 3 'to a stranger?' */}
+                <h2 className="flex flex-col items-center justify-center text-2xl sm:text-3xl font-black leading-tight tracking-tight text-white/95">
+                  <span className="text-white/80 font-bold text-xl sm:text-2xl">Would you <span className="font-black">lend</span> your</span>
+
+                  {/* Centered Rolling Word line with generous width */}
+                  <div className="relative my-1 h-[1.35em] w-full overflow-hidden text-center">
+                    {ROTATING_ITEMS.map((item, idx) => {
+                      const isActive = idx === itemIndex;
+                      return (
+                        <div
+                          key={item.label}
+                          className={`absolute inset-x-0 top-0 flex items-center justify-center transition-all duration-500 ease-out ${
+                            isActive
+                              ? "opacity-100 translate-y-0"
+                              : "opacity-0 -translate-y-full"
+                          }`}
+                        >
+                          <span className={`inline-block font-black text-3xl sm:text-3xl ${item.color} underline decoration-white/20 underline-offset-4`}>
+                            {item.label}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <span className="text-white/80 font-bold text-xl sm:text-2xl">to a stranger?</span>
                 </h2>
-                <p className="mt-4 text-xl font-bold text-emerald-400">
+
+                <p className="mt-20 text-xl font-bold text-emerald-400">
                   Probably.
                 </p>
               </div>
