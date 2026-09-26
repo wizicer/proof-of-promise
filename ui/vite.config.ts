@@ -33,9 +33,9 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["pwa-icon.svg", "apple-touch-icon.png"],
       manifest: {
-        name: "Borrow From A Human",
-        short_name: "Borrow",
-        description: "Make simple promises with verified humans.",
+        name: "Promise",
+        short_name: "Promise",
+        description: "Make clear promises with verified humans and keep them together.",
         theme_color: "#d9ff5b",
         background_color: "#f6f5ed",
         display: "standalone",

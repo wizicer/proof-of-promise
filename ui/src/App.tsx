@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, NavLink, Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
-import { Activity as ActivityIcon, ArrowLeft, ArrowRight, BellRing, Check, ChevronDown, Clock3, Copy, Fingerprint, HandHeart, Home, LoaderCircle, LogOut, Moon, PackageCheck, Plus, ScanLine, ShieldCheck, Sun, UserRound } from "lucide-react";
+import { Activity as ActivityIcon, ArrowLeft, ArrowRight, BellRing, Check, ChevronDown, Clock3, Copy, Fingerprint, HandHeart, Home, LoaderCircle, LogOut, Moon, PackageCheck, ScanLine, ShieldCheck, Sun, UserRound } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -30,11 +30,11 @@ function Login({ onVerified }: { onVerified: () => Promise<void> }) {
     <main className="login-screen">
       <div className="login-orbit" aria-hidden="true"><span /><span /><span /></div>
       <section className="relative z-10 mx-auto flex min-h-dvh max-w-md flex-col justify-between px-6 py-8">
-        <div className="flex items-center gap-3 text-sm font-semibold tracking-tight"><span className="brand-mark"><HandHeart /></span> Borrow From A Human</div>
+        <div className="flex items-center gap-3 text-sm font-semibold tracking-tight"><span className="brand-mark"><HandHeart /></span> Promise</div>
         <div className="pb-8">
           <p className="eyebrow">Proof of promise</p>
           <h1 className="mt-4 text-[3.4rem] font-black leading-[.92] tracking-[-.07em]">Things move.<br /><span className="text-primary-foreground/55">Trust stays.</span></h1>
-          <p className="mt-6 max-w-sm text-base leading-7 text-primary-foreground/70">Borrow what you need from a verified person, and turn a simple handover into a promise both sides can trust.</p>
+          <p className="mt-6 max-w-sm text-base leading-7 text-primary-foreground/70">Make a clear promise with another verified person—and keep every step visible to both of you.</p>
         </div>
         <div className="rounded-[2rem] bg-background p-5 text-foreground shadow-2xl shadow-black/20">
           <div className="mb-5 flex items-center gap-3"><span className="grid size-11 place-items-center rounded-2xl bg-primary"><ShieldCheck className="size-5" /></span><div><p className="font-bold">One human, one account</p><p className="text-sm text-muted-foreground">Private verification by World ID</p></div></div>
@@ -50,7 +50,7 @@ function Shell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-dvh bg-background text-foreground">
       <header className="sticky top-0 z-20 border-b border-border/60 bg-background/85 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-5"><Link to="/" className="flex items-center gap-2 font-extrabold tracking-tight"><span className="brand-mark small"><HandHeart /></span><span className="hidden sm:inline">Borrow From A Human</span><span className="sm:hidden">Borrow</span></Link><span className="verified-pill"><Fingerprint /> Human verified</span></div>
+        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-5"><Link to="/" className="flex items-center gap-2 font-extrabold tracking-tight"><span className="brand-mark small"><HandHeart /></span><span>Promise</span></Link><span className="verified-pill"><Fingerprint /> Human verified</span></div>
       </header>
       <main className="mx-auto max-w-5xl px-5 pb-28 pt-7">{children}</main>
       <nav className="bottom-nav" aria-label="Primary navigation">
@@ -89,11 +89,34 @@ function PromiseHome() {
   }
 
   const active = promises?.filter((entry) => entry.status !== "FULFILLED") ?? [];
-  return <Shell><section className="page-heading"><p className="eyebrow text-muted-foreground">Promise tab</p><h1>What do you need<br />from a human?</h1><p>Make a clear, time-bound promise. Keep it together, in person.</p></section>
-    {!open ? <button className="make-card" onClick={() => setOpen(true)}><span className="make-icon"><Plus /></span><span><strong>Make a promise</strong><small>Start with a lend request</small></span><ArrowRight /></button> :
-      <form onSubmit={submit} className="form-card"><div className="flex items-center justify-between"><div><p className="eyebrow text-muted-foreground">New promise · Lend</p><h2>Ask to borrow</h2></div><Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>Close</Button></div><div className="grid gap-2"><Label htmlFor="item">What do you need?</Label><Input id="item" autoFocus maxLength={80} required placeholder="e.g. a portable charger" value={item} onChange={(e) => setItem(e.target.value)} /></div><div className="grid gap-2"><Label htmlFor="deadline">Return by</Label><Input id="deadline" type="datetime-local" required value={deadline} onChange={(e) => setDeadline(e.target.value)} /></div><div className="grid gap-2"><div className="flex justify-between"><Label htmlFor="note">A note <span className="font-normal text-muted-foreground">(optional)</span></Label><span className="text-xs text-muted-foreground">{note.length}/240</span></div><Textarea id="note" maxLength={240} placeholder="Condition, meeting point, or anything useful…" value={note} onChange={(e) => setNote(e.target.value)} /></div>{error && <p role="alert" className="text-sm text-destructive">{error}</p>}<Button size="lg" disabled={busy} className="h-14 rounded-2xl">{busy && <LoaderCircle className="animate-spin" />}Create lend promise <ArrowRight /></Button></form>}
+  return <Shell><div className="promise-home">
+    <img className="promise-home-wave promise-home-wave-top" src="/promise-assets/decorations/top-wave.svg" alt="" />
+    <section className="promise-picker-heading">
+      <img className="promise-heading-spark" src="/promise-assets/decorations/orange-spark.svg" alt="" />
+      <img className="promise-heading-leaves" src="/promise-assets/decorations/header-leaves.svg" alt="" />
+      <p className="eyebrow text-muted-foreground">Your word, made visible</p>
+      <h1>Make a Promise</h1>
+      <p>Choose what kind of promise you want to make.</p>
+    </section>
+    {!open ? <section className="promise-type-grid" aria-label="Promise types">
+      <article className="promise-type-card promise-type-return">
+        <div className="promise-type-art"><img src="/promise-assets/illustrations/borrow-return.png" alt="Two people passing a book" /><img className="promise-type-spark" src="/promise-assets/decorations/green-spark.svg" alt="" /></div>
+        <h2>Promise to Return</h2>
+        <p>Borrow an item and promise to return it on time.</p>
+        <button type="button" onClick={() => setOpen(true)}>Start this promise <ArrowRight /></button>
+      </article>
+      <article className="promise-type-card promise-type-show-up">
+        <div className="promise-type-art"><img src="/promise-assets/illustrations/reservation-calendar.png" alt="Calendar with a check mark" /></div>
+        <span className="coming-soon">Coming soon</span>
+        <h2>Promise to Show Up</h2>
+        <p>Book a place or time and promise to be there.</p>
+        <button type="button" disabled>Coming soon</button>
+      </article>
+    </section> :
+      <form onSubmit={submit} className="form-card promise-form"><div className="flex items-center justify-between"><div><p className="eyebrow text-muted-foreground">Promise to Return</p><h2>What will you return?</h2></div><Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>Back</Button></div><div className="grid gap-2"><Label htmlFor="item">Item</Label><Input id="item" autoFocus maxLength={80} required placeholder="e.g. a portable charger" value={item} onChange={(e) => setItem(e.target.value)} /></div><div className="grid gap-2"><Label htmlFor="deadline">Promise to return it by</Label><Input id="deadline" type="datetime-local" required value={deadline} onChange={(e) => setDeadline(e.target.value)} /></div><div className="grid gap-2"><div className="flex justify-between"><Label htmlFor="note">A note <span className="font-normal text-muted-foreground">(optional)</span></Label><span className="text-xs text-muted-foreground">{note.length}/240</span></div><Textarea id="note" maxLength={240} placeholder="Condition, meeting point, or anything useful…" value={note} onChange={(e) => setNote(e.target.value)} /></div>{error && <p role="alert" className="text-sm text-destructive">{error}</p>}<Button size="lg" disabled={busy} className="h-14 rounded-2xl">{busy && <LoaderCircle className="animate-spin" />}Make this promise <ArrowRight /></Button></form>}
     {promises === null ? <div className="activity-notice muted mt-8"><LoaderCircle className="animate-spin" /><span>Checking your activity…</span></div> : active.length > 0 && <Link to="/activity" className="activity-notice mt-8"><span className="notice-icon"><BellRing /></span><span><strong>{active.length} {active.length === 1 ? "promise" : "promises"} in motion</strong><small>See what needs attention</small></span><ArrowRight className="ml-auto" /></Link>}
-  </Shell>;
+    <img className="promise-home-wave promise-home-wave-bottom" src="/promise-assets/decorations/bottom-wave.svg" alt="" />
+  </div></Shell>;
 }
 
 function ActivityPage() {
