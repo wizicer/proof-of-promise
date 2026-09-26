@@ -4,10 +4,21 @@ export const promiseStatuses = [
   "ACTIVE",
   "RETURN_REQUESTED",
   "FULFILLED",
+  "COMMITTED",
 ] as const;
 
 export type PromiseStatus = (typeof promiseStatuses)[number];
 export type PromiseRole = "borrower" | "lender";
+export type PromiseKind = "RETURN" | "SHOW_UP";
+
+export type ShowUpDetails = {
+  latitude: number;
+  longitude: number;
+  radiusMeters: number;
+  centerTime: string;
+  windowHours: number;
+  timezone: string;
+};
 
 export type HumanPromise = {
   id: string;
@@ -18,6 +29,8 @@ export type HumanPromise = {
   status: PromiseStatus;
   borrowerVerified: boolean;
   lenderVerified: boolean;
+  kind: PromiseKind;
+  showUp?: ShowUpDetails;
   fulfilledAt?: string;
   myRole?: PromiseRole;
 };

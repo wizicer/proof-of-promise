@@ -7,7 +7,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { RequestHandler } from "express";
 import {
-  bindWorldSession, cancelHandover, consumeChallenge, createChallenge, createPromise, currentPerson, ensureLoginHandle,
+  bindWorldSession, cancelHandover, consumeChallenge, createChallenge, createPromise, createShowUpPromise, currentPerson, ensureLoginHandle,
   findWorldSession, getPromise, joinPromise, listPromises, loginByBoundSession, logout, registerByNullifier, transition,
 } from "./store.js";
 
@@ -160,6 +160,28 @@ export function createApp(frontend: FrontendOptions = {}) {
     const { item, deadline, note = "" } = request.body ?? {};
     if (typeof item !== "string" || !item.trim() || item.trim().length > 80 || typeof deadline !== "string" || !Number.isFinite(Date.parse(deadline)) || Date.parse(deadline) <= Date.now() || typeof note !== "string" || note.length > 240) return response.status(400).json({ error: "Enter an item, a future deadline, and a note under 240 characters" });
     return response.status(201).json(await createPromise(person, item.trim(), new Date(deadline).toISOString(), note.trim()));
+  }));
+
+  app.post("/api/promises/show-up", asyncRoute(async (request, response) => {
+    const person = await currentPerson(request.cookies[cookieName]);
+    if (!person) return response.status(401).json({ error: "Sign in first" });
+    const { latitude, longitude, scheduledAt, centerTime, windowHours, timezone, note = "" } = request.body ?? {};
+    const validCoordinates = typeof latitude === "number" && latitude >= -90 && latitude <= 90 && typeof longitude === "number" && longitude >= -180 && longitude <= 180;
+    const validSchedule = typeof scheduledAt === "string" && Number.isFinite(Date.parse(scheduledAt)) && Date.parse(scheduledAt) > Date.now();
+    const validTime = typeof centerTime === "string" && /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(centerTime);
+    const validWindow = typeof windowHours === "number" && Number.isFinite(windowHours) && windowHours >= 0.5 && windowHours <= 12;
+    const validTimezone = typeof timezone === "string" && /^[A-Za-z0-9_+\-/]{1,64}$/.test(timezone);
+    if (!validCoordinates || !validSchedule || !validTime || !validWindow || !validTimezone || typeof note !== "string" || note.length > 240) {
+      return response.status(400).json({ error: "Choose a valid area, future time, time window, and note under 240 characters" });
+    }
+    return response.status(201).json(await createShowUpPromise(person, new Date(scheduledAt).toISOString(), note.trim(), {
+      latitude,
+      longitude,
+      radiusMeters: 500,
+      centerTime,
+      windowHours,
+      timezone,
+    }));
   }));
 
   app.get("/api/promises/:id", asyncRoute(async (request, response) => {

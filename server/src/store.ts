@@ -1,12 +1,12 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { mkdir, open, readFile, rename, stat, unlink } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
-import type { HumanPromise, PromiseRole, PromiseStatus } from "./types.js";
+import type { HumanPromise, PromiseKind, PromiseRole, PromiseStatus, ShowUpDetails } from "./types.js";
 
 type Person = { id: string; loginHandle?: string; sessionId?: string; worldNullifier?: string; createdAt: string };
 type Session = { tokenHash: string; personId: string; expiresAt: number };
 type Challenge = { nonce: string; action: string; expiresAt: number; used: boolean };
-type PromiseRecord = { id: string; item: string; deadline: string; note: string; createdAt: string; status: PromiseStatus; borrowerId: string; lenderId?: string; fulfilledAt?: string };
+type PromiseRecord = { id: string; item: string; deadline: string; note: string; createdAt: string; status: PromiseStatus; borrowerId: string; lenderId?: string; fulfilledAt?: string; kind?: PromiseKind; showUp?: ShowUpDetails };
 type Data = { version: 1; people: Person[]; sessions: Session[]; challenges: Challenge[]; promises: PromiseRecord[] };
 
 const dataPath = resolve(process.env.PROMISE_DATA_PATH ?? ".data/store.json");
@@ -73,6 +73,8 @@ function view(row: PromiseRecord, personId?: string | null): HumanPromise {
     status: row.status,
     borrowerVerified: true,
     lenderVerified: Boolean(row.lenderId),
+    kind: row.kind ?? "RETURN",
+    ...(row.showUp ? { showUp: row.showUp } : {}),
     ...(row.fulfilledAt ? { fulfilledAt: row.fulfilledAt } : {}),
     ...(personId === row.borrowerId ? { myRole: "borrower" as const } : personId === row.lenderId ? { myRole: "lender" as const } : {}),
   };
@@ -180,6 +182,24 @@ export async function listPromises(personId: string) {
 export async function createPromise(personId: string, item: string, deadline: string, note: string) {
   return change((data) => {
     const row: PromiseRecord = { id: randomUUID(), item, deadline, note, createdAt: new Date().toISOString(), status: "REQUESTED", borrowerId: personId };
+    data.promises.push(row);
+    return view(row, personId);
+  });
+}
+
+export async function createShowUpPromise(personId: string, scheduledAt: string, note: string, showUp: ShowUpDetails) {
+  return change((data) => {
+    const row: PromiseRecord = {
+      id: randomUUID(),
+      item: `Show up at ${showUp.centerTime}`,
+      deadline: scheduledAt,
+      note,
+      createdAt: new Date().toISOString(),
+      status: "COMMITTED",
+      borrowerId: personId,
+      kind: "SHOW_UP",
+      showUp,
+    };
     data.promises.push(row);
     return view(row, personId);
   });

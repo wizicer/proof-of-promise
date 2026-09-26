@@ -80,6 +80,27 @@ test("restores the same account and activity after logout", async () => {
 
     const created = await fetch(`${origin}/api/promises`, { method: "POST", headers: { "content-type": "application/json", cookie }, body: JSON.stringify({ item: "Test umbrella", deadline: new Date(Date.now() + 3_600_000).toISOString(), note: "survives logout" }) });
     assert.equal(created.status, 201);
+
+    const showUp = await fetch(`${origin}/api/promises/show-up`, { method: "POST", headers: { "content-type": "application/json", cookie }, body: JSON.stringify({
+      latitude: 35.6812,
+      longitude: 139.7671,
+      scheduledAt: new Date(Date.now() + 7_200_000).toISOString(),
+      centerTime: "18:00",
+      windowHours: 2,
+      timezone: "Asia/Tokyo",
+      note: "Book dinner nearby",
+    }) });
+    assert.equal(showUp.status, 201);
+    const committed = await showUp.json() as { id: string; kind: string; status: string; showUp: { radiusMeters: number } };
+    assert.equal(committed.kind, "SHOW_UP");
+    assert.equal(committed.status, "COMMITTED");
+    assert.equal(committed.showUp.radiusMeters, 500);
+    const publicPromise = await fetch(`${origin}/api/promises/${committed.id}`);
+    assert.equal(publicPromise.status, 200);
+    assert.equal((await publicPromise.json() as { showUp: { centerTime: string } }).showUp.centerTime, "18:00");
+
+    const invalidShowUp = await fetch(`${origin}/api/promises/show-up`, { method: "POST", headers: { "content-type": "application/json", cookie }, body: JSON.stringify({ latitude: 91 }) });
+    assert.equal(invalidShowUp.status, 400);
     assert.equal((await fetch(`${origin}/api/session`, { method: "DELETE", headers: { cookie } })).status, 200);
 
     const context = await fetch(`${origin}/api/auth/login-context`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ loginHandle }) });
@@ -90,7 +111,7 @@ test("restores the same account and activity after logout", async () => {
     cookie = login.headers.get("set-cookie")!.split(";", 1)[0]!;
     const activity = await fetch(`${origin}/api/promises`, { headers: { cookie } });
     assert.equal(activity.status, 200);
-    assert.deepEqual((await activity.json() as Array<{ item: string }>).map((entry) => entry.item), ["Test umbrella"]);
+    assert.deepEqual((await activity.json() as Array<{ item: string }>).map((entry) => entry.item), ["Show up at 18:00", "Test umbrella"]);
   } finally {
     globalThis.fetch = nativeFetch;
   }
