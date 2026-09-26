@@ -19,7 +19,7 @@ function ShowUpDetail({ promise }: { promise: HumanPromise & { showUp: NonNullab
   const shareUrl = `${location.origin}/p/${promise.id}`;
   const mcpUrl = `${location.origin}/mcp?promiseId=${encodeURIComponent(promise.id)}`;
   const windowLabel = `±${details.windowHours} ${details.windowHours === 1 ? "hour" : "hours"}`;
-  const agentInstructions = `Use the Promise MCP server at ${mcpUrl} to verify promise ${promise.id}. Review its show-up area, ${details.centerTime} center time (${windowLabel}), timezone ${details.timezone}, and note. Then handle the follow-up work needed to help me keep this promise.`;
+  const agentInstructions = `Use the Proof of Promise MCP server at ${mcpUrl} to verify this promise.`;
 
   async function copy(value: string, type: "link" | "agent") {
     await navigator.clipboard.writeText(value);
