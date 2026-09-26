@@ -227,8 +227,17 @@ export function StoryModal({ open, onClose }: StoryModalProps) {
                 </p>
 
                 <div className="mt-4 rounded-2xl border border-primary/40 bg-primary/10 px-5 py-3 shadow-[0_0_25px_rgba(200,255,100,0.15)]">
-                  <h2 className="text-xl sm:text-2xl font-black text-primary tracking-tight">
-                    a human, and a promise.
+                  <h2 className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xl sm:text-2xl font-black text-primary tracking-tight">
+                    <span className="inline-flex items-center gap-1.5 text-white/95">
+                      a human
+                      <img src="/world-id-logo.png" alt="World ID" className="inline-block size-5 rounded-full object-cover align-middle shadow-xs" />
+                      <span>,</span>
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 text-primary">
+                      and a promise
+                      <img src="/brand-icon.png" alt="Promise" className="inline-block size-5 rounded-md object-contain align-middle shadow-xs" />
+                      <span>.</span>
+                    </span>
                   </h2>
                 </div>
               </div>
@@ -237,22 +246,13 @@ export function StoryModal({ open, onClose }: StoryModalProps) {
             {/* Slide 5 */}
             <div className="flex h-full w-full shrink-0 flex-col items-center justify-between px-6 py-6 text-center">
               <div className="my-auto flex flex-col items-center max-w-xs">
-                <div className="relative mb-6 grid size-24 place-items-center rounded-3xl bg-primary text-primary-foreground shadow-[0_0_50px_rgba(180,255,100,0.4)]">
-                  <HandHeart className="size-12" />
+                <div className="relative mb-6 grid size-24 place-items-center overflow-hidden rounded-3xl bg-primary p-3 text-primary-foreground shadow-[0_0_50px_rgba(180,255,100,0.4)]">
+                  <img src="/brand-icon.png" alt="Promise" className="size-full rounded-2xl object-cover" />
                 </div>
 
                 <h2 className="text-2xl sm:text-3xl font-black leading-tight tracking-tight">
                   That’s why we built Promise.
                 </h2>
-                
-                <p className="mt-3 text-sm text-white/70 leading-relaxed">
-                  Real people. Zero invasive KYC. Lightweight commitments backed by World ID.
-                </p>
-
-                <div className="mt-5 flex items-center justify-center gap-2 text-xs font-semibold text-white/60">
-                  <ShieldCheck className="size-4 text-primary" />
-                  <span>Private · Peer-to-Peer · Trust by Proof</span>
-                </div>
               </div>
             </div>
           </div>

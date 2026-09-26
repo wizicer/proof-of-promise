@@ -9,7 +9,7 @@ export function LoginPage({ onVerified }: { onVerified: () => Promise<void> }) {
     <main className="login-screen">
       <div className="login-orbit" aria-hidden="true"><span /><span /><span /></div>
       <section className="relative z-10 mx-auto flex min-h-dvh max-w-md flex-col justify-between px-6 py-8">
-        <div className="flex items-center gap-3 text-sm font-semibold tracking-tight"><span className="brand-mark"><HandHeart /></span> Promise</div>
+        <div className="flex items-center gap-3 text-sm font-semibold tracking-tight"><span className="brand-mark"><img src="/brand-icon.png" alt="Promise" /></span> Promise</div>
         <div className="pb-8">
           <p className="eyebrow">Proof of promise</p>
           <h1 className="mt-4 text-[3.4rem] font-black leading-[.92] tracking-[-.07em]">Things move.<br /><span className="text-primary-foreground/55">Trust stays.</span></h1>
