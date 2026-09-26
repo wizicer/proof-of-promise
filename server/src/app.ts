@@ -336,7 +336,9 @@ export function createApp(frontend: FrontendOptions = {}) {
     }));
     app.use((request, response, next) => {
       if (request.method !== "GET" || !request.accepts("html")) return next();
-      response.setHeader("Cache-Control", "no-cache");
+      response.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+      response.setHeader("Pragma", "no-cache");
+      response.setHeader("Expires", "0");
       return response.sendFile(resolve(distPath, "index.html"));
     });
   }

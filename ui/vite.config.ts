@@ -30,6 +30,7 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
+      selfDestroying: true,
       registerType: "autoUpdate",
       includeAssets: ["pwa-icon.svg", "apple-touch-icon.png"],
       manifest: {
@@ -49,17 +50,6 @@ export default defineConfig({
           { src: "/pwa-maskable-512x512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
         ],
       },
-      workbox: {
-        navigateFallback: "/index.html",
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,wasm}"],
-        runtimeCaching: [
-          {
-            urlPattern: ({ url }) => url.pathname.startsWith("/api/"),
-            handler: "NetworkOnly",
-          },
-        ],
-      },
-      devOptions: { enabled: false },
     }),
   ],
   envDir: path.resolve(__dirname, ".."),
