@@ -4,6 +4,7 @@ import type { Server } from "node:http";
 import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { exportJWK, generateKeyPair, SignJWT } from "jose";
 import type { createApp as CreateApp } from "./app.js";
 
 let server: Server;
@@ -125,6 +126,132 @@ test("allows temporary World Session sign-in without an action", async () => {
     assert.equal(login.status, 200);
     const cookie = login.headers.get("set-cookie")!.split(";", 1)[0]!;
     assert.deepEqual(await fetch(`${origin}/api/session`, { headers: { cookie } }).then((response) => response.json()), { authenticated: true });
+  } finally {
+    globalThis.fetch = nativeFetch;
+  }
+});
+
+test("supports OIDC OAuth authorization code login and persists account continuity", async () => {
+  process.env.WORLD_AUTH_CLIENT_ID = "test_oidc_client";
+  process.env.WORLD_AUTH_CLIENT_SECRET = "test_oidc_secret";
+  process.env.WORLD_AUTH_ISSUER = "https://sandbox.auth.world.org";
+  process.env.WORLD_AUTH_REDIRECT_URI = `${origin}/auth/callback`;
+
+  const { publicKey, privateKey } = await generateKeyPair("RS256");
+  const jwk = await exportJWK(publicKey);
+  jwk.kid = "test-key-1";
+  jwk.alg = "RS256";
+  jwk.use = "sig";
+
+  const nativeFetch = globalThis.fetch;
+  let issuedIdToken: string;
+  const humanSub = "pairwise_human_sub_abcdef123456";
+
+  globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+    const url = String(input);
+    if (url === "https://sandbox.auth.world.org/.well-known/jwks.json") {
+      return new Response(JSON.stringify({ keys: [jwk] }), { status: 200, headers: { "content-type": "application/json" } });
+    }
+    if (url === "https://sandbox.auth.world.org/api/v1/token") {
+      const body = new URLSearchParams(String(init?.body));
+      assert.equal(body.get("grant_type"), "authorization_code");
+      assert.equal(body.get("client_id"), "test_oidc_client");
+      assert.equal(body.get("code"), "mock_auth_code_123");
+      assert.equal(body.get("redirect_uri"), `${origin}/auth/callback`);
+      assert(body.get("code_verifier"));
+
+      return new Response(JSON.stringify({
+        id_token: issuedIdToken,
+        access_token: "mock_opaque_access_token",
+        token_type: "Bearer",
+        expires_in: 300,
+      }), { status: 200, headers: { "content-type": "application/json" } });
+    }
+    return nativeFetch(input, init);
+  }) as typeof fetch;
+
+  try {
+    // 1. Initiate OAuth
+    const authStart = await fetch(`${origin}/api/auth/world-id?format=json`);
+    assert.equal(authStart.status, 200);
+    const startData = await authStart.json() as { url: string };
+    const authUrl = new URL(startData.url);
+    assert.equal(authUrl.origin, "https://sandbox.auth.world.org");
+    assert.equal(authUrl.pathname, "/api/v1/authorize");
+    assert.equal(authUrl.searchParams.get("client_id"), "test_oidc_client");
+    const state = authUrl.searchParams.get("state")!;
+    const nonce = authUrl.searchParams.get("nonce")!;
+    assert(state);
+    assert(nonce);
+
+    const oidcStateCookie = authStart.headers.get("set-cookie")!.split(";", 1)[0]!;
+
+    // 2. Sign ID token
+    issuedIdToken = await new SignJWT({ nonce })
+      .setProtectedHeader({ alg: "RS256", kid: "test-key-1" })
+      .setIssuer("https://sandbox.auth.world.org")
+      .setAudience("test_oidc_client")
+      .setSubject(humanSub)
+      .setExpirationTime("5m")
+      .setIssuedAt()
+      .sign(privateKey);
+
+    // 3. Callback
+    const callbackRes = await fetch(`${origin}/auth/callback?code=mock_auth_code_123&state=${state}`, {
+      headers: { cookie: oidcStateCookie },
+      redirect: "manual",
+    });
+    assert.equal(callbackRes.status, 302);
+    assert.equal(callbackRes.headers.get("location"), "/");
+
+    let sessionCookie = callbackRes.headers.get("set-cookie")!.split(";", 1)[0]!;
+
+    // 4. Verify session is active and create a promise
+    const sessionRes = await fetch(`${origin}/api/session`, { headers: { cookie: sessionCookie } });
+    assert.deepEqual(await sessionRes.json(), { authenticated: true });
+
+    const createPromiseRes = await fetch(`${origin}/api/promises`, {
+      method: "POST",
+      headers: { "content-type": "application/json", cookie: sessionCookie },
+      body: JSON.stringify({ item: "OIDC continuity item", deadline: new Date(Date.now() + 3600000).toISOString(), note: "OIDC test" }),
+    });
+    assert.equal(createPromiseRes.status, 201);
+
+    // 5. Logout
+    await fetch(`${origin}/api/session`, { method: "DELETE", headers: { cookie: sessionCookie } });
+    const loggedOutCheck = await fetch(`${origin}/api/session`, { headers: { cookie: sessionCookie } });
+    assert.deepEqual(await loggedOutCheck.json(), { authenticated: false });
+
+    // 6. Sign in again with the SAME humanSub (new state, new code, new nonce)
+    const secondStart = await fetch(`${origin}/api/auth/world-id?format=json`);
+    const secondStartData = await secondStart.json() as { url: string };
+    const secondAuthUrl = new URL(secondStartData.url);
+    const secondState = secondAuthUrl.searchParams.get("state")!;
+    const secondNonce = secondAuthUrl.searchParams.get("nonce")!;
+    const secondOidcStateCookie = secondStart.headers.get("set-cookie")!.split(";", 1)[0]!;
+
+    issuedIdToken = await new SignJWT({ nonce: secondNonce })
+      .setProtectedHeader({ alg: "RS256", kid: "test-key-1" })
+      .setIssuer("https://sandbox.auth.world.org")
+      .setAudience("test_oidc_client")
+      .setSubject(humanSub) // SAME SUB!
+      .setExpirationTime("5m")
+      .setIssuedAt()
+      .sign(privateKey);
+
+    const secondCallbackRes = await fetch(`${origin}/auth/callback?code=mock_auth_code_123&state=${secondState}`, {
+      headers: { cookie: secondOidcStateCookie },
+      redirect: "manual",
+    });
+    assert.equal(secondCallbackRes.status, 302);
+    sessionCookie = secondCallbackRes.headers.get("set-cookie")!.split(";", 1)[0]!;
+
+    // 7. Verify the user is back to the SAME account with previous promise!
+    const activityRes = await fetch(`${origin}/api/promises`, { headers: { cookie: sessionCookie } });
+    assert.equal(activityRes.status, 200);
+    const activity = await activityRes.json() as Array<{ item: string }>;
+    assert.equal(activity.length, 1);
+    assert.equal(activity[0]!.item, "OIDC continuity item");
   } finally {
     globalThis.fetch = nativeFetch;
   }

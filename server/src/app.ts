@@ -2,13 +2,14 @@ import { signRequest } from "@worldcoin/idkit-core/signing";
 import cookieParser from "cookie-parser";
 import express, { type Request, type Response } from "express";
 import { existsSync } from "node:fs";
-import { randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { RequestHandler } from "express";
+import { createRemoteJWKSet, jwtVerify } from "jose";
 import {
   cancelHandover, consumeChallenge, createChallenge, createPromise, createShowUpPromise, currentPerson,
-  getPromise, joinPromise, listPromises, loginByNullifier, loginByWorldSession, logout, transition,
+  getPromise, joinPromise, listPromises, loginByNullifier, loginByOidcSub, loginByWorldSession, logout, transition,
 } from "./store.js";
 
 const cookieName = "bfa_session";
@@ -108,6 +109,142 @@ export function createApp(frontend: FrontendOptions = {}) {
     response.cookie(cookieName, token, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 30 * 86_400_000 });
     return response.json({ success: true });
   }));
+
+  app.get("/api/auth/world-id", asyncRoute(async (request, response) => {
+    const clientId = process.env.WORLD_AUTH_CLIENT_ID;
+    const issuer = process.env.WORLD_AUTH_ISSUER ?? "https://sandbox.auth.world.org";
+    const proto = request.get("x-forwarded-proto") ?? request.protocol;
+    const host = request.get("x-forwarded-host") ?? request.get("host");
+    const defaultRedirect = `${proto}://${host}/auth/callback`;
+    const redirectUri = process.env.WORLD_AUTH_REDIRECT_URI ?? defaultRedirect;
+
+    if (!clientId) return response.status(500).json({ error: "WORLD_AUTH_CLIENT_ID is not configured" });
+
+    const state = randomBytes(16).toString("base64url");
+    const nonce = randomBytes(16).toString("base64url");
+    const codeVerifier = randomBytes(32).toString("base64url");
+    const codeChallenge = createHash("sha256").update(codeVerifier).digest("base64url");
+
+    response.cookie("bfa_oidc_state", JSON.stringify({ state, nonce, codeVerifier, redirectUri }), {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: proto === "https" || process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 10 * 60 * 1000,
+    });
+
+    const authUrl = new URL(`${issuer}/api/v1/authorize`);
+    authUrl.searchParams.set("client_id", clientId);
+    authUrl.searchParams.set("redirect_uri", redirectUri);
+    authUrl.searchParams.set("response_type", "code");
+    authUrl.searchParams.set("scope", "openid");
+    authUrl.searchParams.set("state", state);
+    authUrl.searchParams.set("nonce", nonce);
+    authUrl.searchParams.set("code_challenge", codeChallenge);
+    authUrl.searchParams.set("code_challenge_method", "S256");
+
+    if (request.query.format === "json" || request.xhr) {
+      return response.json({ url: authUrl.toString() });
+    }
+    return response.redirect(authUrl.toString());
+  }));
+
+  const handleOidcCallback = asyncRoute(async (request, response) => {
+    const { code, state, error, error_description } = request.query;
+    if (error) {
+      console.error(JSON.stringify({ scope: "world-auth", stage: "callback_error", error, error_description }));
+      return response.redirect(`/?auth_error=${encodeURIComponent(String(error_description || error))}`);
+    }
+    if (typeof code !== "string" || typeof state !== "string") {
+      return response.redirect("/?auth_error=missing_code_or_state");
+    }
+
+    const savedCookie = request.cookies?.bfa_oidc_state;
+    let saved: { state: string; nonce: string; codeVerifier: string; redirectUri: string } | null = null;
+    try {
+      saved = savedCookie ? JSON.parse(savedCookie) : null;
+    } catch {
+      saved = null;
+    }
+
+    if (!saved || saved.state !== state) {
+      console.error(JSON.stringify({ scope: "world-auth", stage: "state_mismatch", received: state, expected: saved?.state }));
+      return response.redirect("/?auth_error=invalid_state");
+    }
+
+    const clientId = process.env.WORLD_AUTH_CLIENT_ID;
+    const clientSecret = process.env.WORLD_AUTH_CLIENT_SECRET;
+    const issuer = process.env.WORLD_AUTH_ISSUER ?? "https://sandbox.auth.world.org";
+    const redirectUri = saved.redirectUri;
+
+    if (!clientId || !clientSecret) return response.status(500).json({ error: "World Auth credentials missing" });
+
+    const tokenParams = new URLSearchParams({
+      grant_type: "authorization_code",
+      client_id: clientId,
+      code,
+      redirect_uri: redirectUri,
+      code_verifier: saved.codeVerifier,
+    });
+
+    const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+    let tokenRes: globalThis.Response;
+    try {
+      tokenRes = await fetch(`${issuer}/api/v1/token`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "Authorization": `Basic ${basicAuth}`,
+        },
+        body: tokenParams.toString(),
+      });
+    } catch (err) {
+      console.error(JSON.stringify({ scope: "world-auth", stage: "token_endpoint_unreachable", error: String(err) }));
+      return response.redirect("/?auth_error=token_endpoint_unreachable");
+    }
+
+    if (!tokenRes.ok) {
+      const errBody = await tokenRes.text().catch(() => "");
+      console.error(JSON.stringify({ scope: "world-auth", stage: "token_exchange_failed", status: tokenRes.status, body: errBody }));
+      return response.redirect("/?auth_error=token_exchange_failed");
+    }
+
+    const tokenData = await tokenRes.json().catch(() => ({})) as { id_token?: string; access_token?: string };
+    if (!tokenData.id_token) return response.redirect("/?auth_error=missing_id_token");
+
+    const JWKS = createRemoteJWKSet(new URL(`${issuer}/.well-known/jwks.json`));
+    let payload: { sub?: string; nonce?: string };
+    try {
+      const verified = await jwtVerify(tokenData.id_token, JWKS, { issuer, audience: clientId });
+      payload = verified.payload;
+    } catch (err) {
+      console.error(JSON.stringify({ scope: "world-auth", stage: "jwt_verification_failed", error: String(err) }));
+      return response.redirect("/?auth_error=invalid_id_token");
+    }
+
+    if (saved.nonce && payload.nonce !== saved.nonce) {
+      console.error(JSON.stringify({ scope: "world-auth", stage: "nonce_mismatch" }));
+      return response.redirect("/?auth_error=nonce_mismatch");
+    }
+
+    if (!payload.sub) return response.redirect("/?auth_error=missing_sub");
+
+    const sessionToken = await loginByOidcSub(payload.sub);
+    const proto = request.get("x-forwarded-proto") ?? request.protocol;
+    response.cookie(cookieName, sessionToken, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: proto === "https" || process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 30 * 86_400_000,
+    });
+    response.clearCookie("bfa_oidc_state", { path: "/" });
+
+    return response.redirect("/");
+  });
+
+  app.get("/auth/callback", handleOidcCallback);
+  app.get("/api/auth/callback", handleOidcCallback);
 
   app.get("/api/session", asyncRoute(async (request, response) => response.json({ authenticated: Boolean(await currentPerson(request.cookies[cookieName])) })));
 
