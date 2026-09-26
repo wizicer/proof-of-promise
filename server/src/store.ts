@@ -114,6 +114,17 @@ export async function loginByNullifier(nullifier: string) {
   });
 }
 
+export async function loginByWorldSession(sessionId: string) {
+  return change((data) => {
+    let person = data.people.find((entry) => entry.sessionId === sessionId);
+    if (!person) {
+      person = { id: randomUUID(), sessionId, createdAt: new Date().toISOString() };
+      data.people.push(person);
+    }
+    return createSession(data, person.id);
+  });
+}
+
 export async function currentPerson(token?: string) {
   if (!token) return null;
   const session = (await read()).sessions.find((entry) => entry.tokenHash === hash(token) && entry.expiresAt > Date.now());

@@ -56,10 +56,11 @@ test("restores the same account and activity after logout", async () => {
   const nativeFetch = globalThis.fetch;
   globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) => {
     if (String(input).startsWith("https://developer.world.org/")) {
+      const submitted = JSON.parse(String(init?.body)) as { action?: string; session_id?: string };
       return Promise.resolve(new Response(JSON.stringify({
         success: true,
         environment: "staging",
-        nullifier: `0x${"12".repeat(32)}`,
+        ...(submitted.session_id ? { session_id: submitted.session_id } : { nullifier: `0x${"12".repeat(32)}` }),
       }), { status: 200, headers: { "content-type": "application/json" } }));
     }
     return nativeFetch(input, init);
@@ -103,6 +104,27 @@ test("restores the same account and activity after logout", async () => {
     const activity = await fetch(`${origin}/api/promises`, { headers: { cookie } });
     assert.equal(activity.status, 200);
     assert.deepEqual((await activity.json() as Array<{ item: string }>).map((entry) => entry.item), ["Show up at 18:00", "Test umbrella"]);
+  } finally {
+    globalThis.fetch = nativeFetch;
+  }
+});
+
+test("allows temporary World Session sign-in without an action", async () => {
+  const nativeFetch = globalThis.fetch;
+  globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) => {
+    if (String(input).startsWith("https://developer.world.org/")) {
+      const submitted = JSON.parse(String(init?.body)) as { session_id?: string };
+      return Promise.resolve(new Response(JSON.stringify({ success: true, environment: "staging", session_id: submitted.session_id }), { status: 200, headers: { "content-type": "application/json" } }));
+    }
+    return nativeFetch(input, init);
+  }) as typeof fetch;
+
+  try {
+    const challenge = await fetch(`${origin}/api/rp-signature`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" }).then((response) => response.json()) as { nonce: string };
+    const login = await fetch(`${origin}/api/verify-proof`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ idkitResponse: { nonce: challenge.nonce, session_id: "session_emergency-login", environment: "staging" } }) });
+    assert.equal(login.status, 200);
+    const cookie = login.headers.get("set-cookie")!.split(";", 1)[0]!;
+    assert.deepEqual(await fetch(`${origin}/api/session`, { headers: { cookie } }).then((response) => response.json()), { authenticated: true });
   } finally {
     globalThis.fetch = nativeFetch;
   }

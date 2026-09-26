@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
-import { CredentialRequest, IDKitRequestWidget, setDebug, type IDKitDebugReport, type IDKitErrorCodes, type RpContext } from "@worldcoin/idkit";
+import { CredentialRequest, IDKitSessionWidget, setDebug, type IDKitDebugReport, type IDKitErrorCodes, type RpContext } from "@worldcoin/idkit";
 import { Fingerprint, LoaderCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-type Props = { label: string; action: string; presence?: boolean; onVerified: () => Promise<void> | void };
+type Props = { label: string; presence?: boolean; onVerified: () => Promise<void> | void };
 type DiagnosticError = { message: string; code?: string; requestId?: string };
 
 if (import.meta.env.DEV) setDebug(true);
@@ -13,7 +13,7 @@ function safeDebugReport(report?: IDKitDebugReport) {
   return { requestId: report.request_id, transport: report.transport, sdkVersion: report.package_version, generatedAt: report.generated_at };
 }
 
-export function WorldIdButton({ label, action, presence = false, onVerified }: Props) {
+export function WorldIdButton({ label, presence = false, onVerified }: Props) {
   const [open, setOpen] = useState(false);
   const [context, setContext] = useState<RpContext | null>(null);
   const [error, setError] = useState<DiagnosticError | null>(null);
@@ -21,7 +21,7 @@ export function WorldIdButton({ label, action, presence = false, onVerified }: P
   const prepare = useCallback(async () => {
     try {
       setError(null);
-      const response = await fetch("/api/rp-signature", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(action ? { action } : {}) });
+      const response = await fetch("/api/rp-signature", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
         setError({ message: data.error ?? "Could not prepare World ID", requestId: response.headers.get("x-request-id") ?? undefined });
@@ -31,7 +31,7 @@ export function WorldIdButton({ label, action, presence = false, onVerified }: P
     } catch (reason) {
       setError({ message: reason instanceof Error ? reason.message : "Could not prepare World ID", code: "network_error" });
     }
-  }, [action]);
+  }, []);
 
   useEffect(() => { void prepare(); }, [prepare]);
 
@@ -73,7 +73,7 @@ export function WorldIdButton({ label, action, presence = false, onVerified }: P
         {context ? label : "Preparing secure sign in…"}
       </Button>
       {error && <div role="alert" className="rounded-xl border border-destructive/25 bg-destructive/5 px-3 py-2 text-center text-sm text-destructive"><p>{error.message}</p>{(error.code || error.requestId) && <p className="mt-1 font-mono text-[.65rem] opacity-75">{error.code && `code: ${error.code}`}{error.code && error.requestId && " · "}{error.requestId && `diagnostic: ${error.requestId}`}</p>}</div>}
-      {context && <IDKitRequestWidget {...shared} action={action} allow_legacy_proofs={false} />}
+      {context && <IDKitSessionWidget {...shared} />}
     </div>
   );
 }

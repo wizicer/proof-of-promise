@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import type { RequestHandler } from "express";
 import {
   cancelHandover, consumeChallenge, createChallenge, createPromise, createShowUpPromise, currentPerson,
-  getPromise, joinPromise, listPromises, loginByNullifier, logout, transition,
+  getPromise, joinPromise, listPromises, loginByNullifier, loginByWorldSession, logout, transition,
 } from "./store.js";
 
 const cookieName = "bfa_session";
@@ -92,12 +92,18 @@ export function createApp(frontend: FrontendOptions = {}) {
     if (request.body?.requireUserPresence === true && proof.user_presence_completed !== true) return response.status(400).json({ error: "Live check incomplete" });
     if (!await consumeChallenge(proof.nonce, typeof proof.action === "string" ? proof.action : "")) return response.status(409).json({ error: "Proof request expired or already used" });
 
-    const proofAction = typeof proof.action === "string" ? proof.action : "";
-    if (proofAction !== registrationAction || typeof (proof.session_id ?? result.session_id) === "string") return response.status(400).json({ error: "Sign in requires the fixed World ID identity action" });
-    const nestedResults = Array.isArray(result.results) ? result.results as Array<Record<string, unknown>> : [];
-    const nullifier = result.nullifier ?? nestedResults.find((entry) => entry.identifier === "proof_of_human" && entry.success === true)?.nullifier;
-    if (typeof nullifier !== "string" || !/^0x[0-9a-fA-F]{64}$/.test(nullifier)) return response.status(400).json({ error: "No verified identity was returned" });
-    const token = await loginByNullifier(BigInt(nullifier).toString(10));
+    const sessionId = proof.session_id ?? result.session_id;
+    let token: string;
+    if (typeof sessionId === "string") {
+      token = await loginByWorldSession(sessionId);
+    } else {
+      const proofAction = typeof proof.action === "string" ? proof.action : "";
+      if (proofAction !== registrationAction) return response.status(400).json({ error: "No verified World ID identity was returned" });
+      const nestedResults = Array.isArray(result.results) ? result.results as Array<Record<string, unknown>> : [];
+      const nullifier = result.nullifier ?? nestedResults.find((entry) => entry.identifier === "proof_of_human" && entry.success === true)?.nullifier;
+      if (typeof nullifier !== "string" || !/^0x[0-9a-fA-F]{64}$/.test(nullifier)) return response.status(400).json({ error: "No verified identity was returned" });
+      token = await loginByNullifier(BigInt(nullifier).toString(10));
+    }
 
     response.cookie(cookieName, token, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 30 * 86_400_000 });
     return response.json({ success: true });

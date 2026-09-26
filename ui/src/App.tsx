@@ -50,8 +50,6 @@ function relativeTime(value: string) {
   return formatter.format(Math.round(difference / 86_400_000), "day");
 }
 
-const registrationAction = "borrow-from-a-human-register";
-
 function Login({ onVerified }: { onVerified: () => Promise<void> }) {
   return (
     <main className="login-screen">
@@ -65,8 +63,8 @@ function Login({ onVerified }: { onVerified: () => Promise<void> }) {
         </div>
         <div className="rounded-[2rem] bg-background p-5 text-foreground shadow-2xl shadow-black/20">
           <div className="mb-5 flex items-center gap-3"><span className="grid size-11 place-items-center rounded-2xl bg-primary"><ShieldCheck className="size-5" /></span><div><p className="font-bold">One human, one account</p><p className="text-sm text-muted-foreground">Private verification by World ID</p></div></div>
-          <WorldIdButton label="Sign in with World ID" action={registrationAction} onVerified={onVerified} />
-          <p className="mt-4 text-center text-xs leading-5 text-muted-foreground">Your World ID privately restores the same account on every device. No name, email, phone number, or recovery key is needed.</p>
+          <WorldIdButton label="Continue with World ID" onVerified={onVerified} />
+          <p className="mt-4 text-center text-xs leading-5 text-muted-foreground">Temporary session sign-in while account identity verification is being restored.</p>
         </div>
       </section>
     </main>
