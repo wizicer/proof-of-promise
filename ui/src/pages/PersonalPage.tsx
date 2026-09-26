@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, ChevronDown, Fingerprint, LogOut, Moon, ShieldCheck, Sparkles, Store, Sun } from "lucide-react";
+import { ArrowRight, ChevronDown, LogOut, Moon, ShieldCheck, Sparkles, Store, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Shell } from "@/layouts/Shell";
@@ -20,7 +20,7 @@ export function PersonalPage({ onLogout }: { onLogout: () => Promise<void> }) {
       </section>
       
       <section className="profile-card">
-        <div className="profile-avatar"><Fingerprint /></div>
+        <div className="profile-avatar"><img src="/world-id-logo.png" alt="" className="size-full rounded-full object-cover" /></div>
         <div>
           <p className="text-lg font-bold">Verified human</p>
           <p className="text-sm text-muted-foreground">World ID · Private account</p>
