@@ -14,5 +14,6 @@ export const api = {
   promises: () => request<HumanPromise[]>("/api/promises"),
   promise: (id: string) => request<HumanPromise>(`/api/promises/${id}`),
   createPromise: (value: { item: string; deadline: string; note: string }) => request<HumanPromise>("/api/promises", { method: "POST", body: JSON.stringify(value) }),
+  createShowUpPromise: (value: { latitude: number; longitude: number; scheduledAt: string; centerTime: string; windowHours: number; timezone: string; note: string }) => request<HumanPromise>("/api/promises/show-up", { method: "POST", body: JSON.stringify(value) }),
   act: (id: string, action: string) => request<{ success: true }>(`/api/promises/${id}/${action}`, { method: "POST" }),
 };

@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, NavLink, Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
-import { Activity as ActivityIcon, ArrowLeft, ArrowRight, BatteryCharging, BellRing, BookOpen, Cable, Check, ChevronDown, Clock3, Copy, Fingerprint, HandHeart, Headphones, Home, LoaderCircle, LogOut, MapPin, Moon, PackageCheck, PackageOpen, PlugZap, ScanLine, ShieldCheck, Sun, Umbrella, Unplug, UserRound, Wrench, type LucideIcon } from "lucide-react";
+import { Activity as ActivityIcon, ArrowLeft, ArrowRight, BatteryCharging, BellRing, BookOpen, Bot, Cable, CalendarCheck2, Check, ChevronDown, Clock3, Copy, Fingerprint, HandHeart, Headphones, Home, LoaderCircle, LogOut, MapPin, Moon, PackageCheck, PackageOpen, PlugZap, ScanLine, ShieldCheck, Sun, Umbrella, Unplug, UserRound, Wrench, type LucideIcon } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -20,6 +20,7 @@ const statusCopy: Record<PromiseStatus, { label: string; hint: string }> = {
   ACTIVE: { label: "Promise active", hint: "Item is with the borrower" },
   RETURN_REQUESTED: { label: "Return in progress", hint: "Lender checks the item" },
   FULFILLED: { label: "Promise kept", hint: "Returned and confirmed" },
+  COMMITTED: { label: "Promise committed", hint: "Ready for you or your agent" },
 };
 
 const itemOptions: { label: string; icon: LucideIcon }[] = [
@@ -120,7 +121,7 @@ function Empty({ title, copy }: { title: string; copy: string }) {
 
 function PromiseCard({ promise }: { promise: HumanPromise }) {
   const state = statusCopy[promise.status];
-  return <Link to={`/p/${promise.id}`} className="promise-card group"><span className={`status-dot status-${promise.status.toLowerCase()}`}><span /></span><span className="promise-card-copy"><span className="promise-card-title"><strong>{promise.item}</strong><span className="role-tag">{promise.myRole === "borrower" ? "Borrowing" : "Lending"}</span></span><span className="promise-card-meta"><span>{state.label}</span><span><Clock3 />{relativeTime(promise.deadline)}</span></span></span><ArrowRight className="promise-card-arrow" /></Link>;
+  return <Link to={`/p/${promise.id}`} className="promise-card group"><span className={`status-dot status-${promise.status.toLowerCase()}`}><span /></span><span className="promise-card-copy"><span className="promise-card-title"><strong>{promise.item}</strong><span className="role-tag">{promise.kind === "SHOW_UP" ? "Committed" : promise.myRole === "borrower" ? "Borrowing" : "Lending"}</span></span><span className="promise-card-meta"><span>{state.label}</span><span><Clock3 />{relativeTime(promise.deadline)}</span></span></span><ArrowRight className="promise-card-arrow" /></Link>;
 }
 
 function PromiseHome() {
@@ -147,7 +148,7 @@ function PromiseHome() {
     catch (reason) { setError(reason instanceof Error ? reason.message : "Could not make promise"); setBusy(false); }
   }
 
-  const active = promises?.filter((entry) => entry.status !== "FULFILLED") ?? [];
+  const active = promises?.filter((entry) => entry.kind !== "SHOW_UP" && entry.status !== "FULFILLED") ?? [];
   return <Shell><div className="promise-home">
     <section className="promise-picker-heading">
       <h1>Make a Promise</h1>
@@ -181,6 +182,14 @@ function shiftClock(time: string, hours: number) {
   return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
 }
 
+function nextOccurrence(time: string) {
+  const [hours, minutes] = time.split(":").map(Number);
+  const date = new Date();
+  date.setHours(hours, minutes, 0, 0);
+  if (date.getTime() <= Date.now()) date.setDate(date.getDate() + 1);
+  return date.toISOString();
+}
+
 function ShowUpPage() {
   const [location, setLocation] = useState<ShowUpLocation>({ lat: 35.6812, lng: 139.7671 });
   const [timeChoice, setTimeChoice] = useState("18:00");
@@ -188,9 +197,32 @@ function ShowUpPage() {
   const [windowChoice, setWindowChoice] = useState("2");
   const [customWindow, setCustomWindow] = useState("2");
   const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
   const time = timeChoice === "custom" ? customTime : timeChoice;
   const windowHours = windowChoice === "custom" ? Number(customWindow) : Number(windowChoice);
   const hasWindow = Number.isFinite(windowHours) && windowHours > 0;
+
+  async function commitPromise() {
+    if (!time || !hasWindow) { setError("Choose a valid time and flexibility window"); return; }
+    setBusy(true); setError("");
+    try {
+      const created = await api.createShowUpPromise({
+        latitude: location.lat,
+        longitude: location.lng,
+        scheduledAt: nextOccurrence(time),
+        centerTime: time,
+        windowHours,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+        note,
+      });
+      navigate(`/p/${created.id}`);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Could not make this promise");
+      setBusy(false);
+    }
+  }
 
   return <Shell><div className="show-up-page">
     <Link to="/" className="back-link"><ArrowLeft />Back</Link>
@@ -225,6 +257,8 @@ function ShowUpPage() {
     </section>
 
     <details className="optional-note show-up-note"><summary>Add a note <span>(optional)</span></summary><div className="mt-3"><div className="mb-2 text-right text-xs text-muted-foreground">{note.length}/240</div><Textarea aria-label="Optional note" maxLength={240} placeholder="Meeting point, how to recognize you, or anything useful…" value={note} onChange={(event) => setNote(event.target.value)} /></div></details>
+    {error && <p role="alert" className="mt-3 text-sm text-destructive">{error}</p>}
+    <Button size="lg" className="show-up-commit" disabled={busy || !time || !hasWindow} onClick={() => void commitPromise()}>{busy ? <LoaderCircle className="animate-spin" /> : <CalendarCheck2 />}Make this promise <ArrowRight /></Button>
   </div></Shell>;
 }
 
@@ -239,9 +273,10 @@ function ActivityPage() {
     document.addEventListener("visibilitychange", sync);
     return () => { active = false; window.clearInterval(interval); window.removeEventListener("focus", sync); document.removeEventListener("visibilitychange", sync); };
   }, []);
-  const active = promises?.filter((entry) => entry.status !== "FULFILLED") ?? [];
-  const done = promises?.filter((entry) => entry.status === "FULFILLED") ?? [];
-  return <Shell><section className="compact-page-heading"><h1>Activity</h1><p>Every promise, right now.</p></section>{promises === null ? <div className="grid place-items-center py-12"><LoaderCircle className="animate-spin" /></div> : <><section className="activity-section"><div className="section-title"><h2>In motion</h2><span>{active.length}</span></div>{active.length ? <div className="card-grid">{active.map((entry) => <PromiseCard key={entry.id} promise={entry} />)}</div> : <Empty title="Nothing needs attention" copy="Your next active promise will appear here." />}</section><section className="activity-section"><div className="section-title"><h2>Promises kept</h2><span>{done.length}</span></div>{done.length ? <div className="card-grid">{done.map((entry) => <PromiseCard key={entry.id} promise={entry} />)}</div> : <Empty title="Your history is unwritten" copy="Completed promises will collect here—quiet proof that trust worked." />}</section></>}</Shell>;
+  const active = promises?.filter((entry) => entry.kind !== "SHOW_UP" && entry.status !== "FULFILLED") ?? [];
+  const committed = promises?.filter((entry) => entry.kind === "SHOW_UP") ?? [];
+  const done = promises?.filter((entry) => entry.kind !== "SHOW_UP" && entry.status === "FULFILLED") ?? [];
+  return <Shell><section className="compact-page-heading"><h1>Activity</h1><p>Every promise, right now.</p></section>{promises === null ? <div className="grid place-items-center py-12"><LoaderCircle className="animate-spin" /></div> : <><section className="activity-section"><div className="section-title"><h2>In motion</h2><span>{active.length}</span></div>{active.length ? <div className="card-grid">{active.map((entry) => <PromiseCard key={entry.id} promise={entry} />)}</div> : <Empty title="Nothing needs attention" copy="Your next active promise will appear here." />}</section>{committed.length > 0 && <section className="activity-section"><div className="section-title"><h2>Committed</h2><span>{committed.length}</span></div><div className="card-grid">{committed.map((entry) => <PromiseCard key={entry.id} promise={entry} />)}</div></section>}<section className="activity-section"><div className="section-title"><h2>Promises kept</h2><span>{done.length}</span></div>{done.length ? <div className="card-grid">{done.map((entry) => <PromiseCard key={entry.id} promise={entry} />)}</div> : <Empty title="Your history is unwritten" copy="Completed return promises will collect here." />}</section></>}</Shell>;
 }
 
 function PersonalPage({ onLogout }: { onLogout: () => Promise<void> }) {
@@ -249,6 +284,48 @@ function PersonalPage({ onLogout }: { onLogout: () => Promise<void> }) {
   const loginHandle = localStorage.getItem("bfa-login-handle") ?? "";
   const { theme, setTheme } = useTheme();
   return <Shell><section className="compact-page-heading"><h1>Personal</h1><p>Your verified identity and preferences.</p></section><section className="profile-card"><div className="profile-avatar"><Fingerprint /></div><div><p className="text-lg font-bold">Verified human</p><p className="text-sm text-muted-foreground">World ID · Private account</p></div><ShieldCheck className="ml-auto text-success" /></section><section className="settings-card">{loginHandle && <div className="setting-row"><div className="min-w-0"><strong>Account recovery key</strong><p className="truncate font-mono">{loginHandle}</p></div><Button variant="outline" className="rounded-xl" onClick={() => void navigator.clipboard.writeText(loginHandle)}><Copy />Copy</Button></div>}<div className="setting-row"><div><strong>Fresh presence check</strong><p>Ask World ID to confirm you are present</p></div><Switch checked={presence} onCheckedChange={(value) => { setPresence(value); localStorage.setItem("bfa-presence", String(value)); }} /></div><div className="setting-row"><div><strong>Appearance</strong><p>Light, dark, or follow your device</p></div><DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" className="rounded-xl">{theme === "dark" ? <Moon /> : <Sun />} {theme}<ChevronDown /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onClick={() => setTheme("light")}>Light</DropdownMenuItem><DropdownMenuItem onClick={() => setTheme("dark")}>Dark</DropdownMenuItem><DropdownMenuItem onClick={() => setTheme("system")}>System</DropdownMenuItem></DropdownMenuContent></DropdownMenu></div></section><Button variant="outline" size="lg" className="mt-5 h-14 w-full rounded-2xl text-destructive" onClick={() => void onLogout()}><LogOut />Sign out</Button><p className="mt-8 text-center text-xs leading-5 text-muted-foreground">Save your recovery key somewhere private. Your public promise never exposes it or your World ID details.</p></Shell>;
+}
+
+function ShowUpDetail({ promise }: { promise: HumanPromise & { showUp: NonNullable<HumanPromise["showUp"]> } }) {
+  const [copied, setCopied] = useState<"link" | "agent" | null>(null);
+  const details = promise.showUp;
+  const shareUrl = `${location.origin}/p/${promise.id}`;
+  const mcpUrl = `${location.origin}/mcp?promiseId=${encodeURIComponent(promise.id)}`;
+  const windowLabel = `±${details.windowHours} ${details.windowHours === 1 ? "hour" : "hours"}`;
+  const agentInstructions = `Use the Promise MCP server at ${mcpUrl} to verify promise ${promise.id}. Review its show-up area, ${details.centerTime} center time (${windowLabel}), timezone ${details.timezone}, and note. Then handle the follow-up work needed to help me keep this promise.`;
+
+  async function copy(value: string, type: "link" | "agent") {
+    await navigator.clipboard.writeText(value);
+    setCopied(type);
+    window.setTimeout(() => setCopied((current) => current === type ? null : current), 1_500);
+  }
+
+  return <Shell><div className="detail-page show-up-detail">
+    <Link to="/activity" className="back-link"><ArrowLeft />Activity</Link>
+    <section className="detail-hero show-up-detail-hero">
+      <div className="flex items-center justify-between"><span className="role-tag">Committed</span><span className="text-xs text-muted-foreground">#{promise.id.slice(0, 6)}</span></div>
+      <div className="detail-object"><div className="object-icon show-up-object-icon"><CalendarCheck2 /></div><div><p className="eyebrow text-muted-foreground">Promise to Show Up</p><h1>{details.centerTime} · {windowLabel}</h1></div></div>
+      <div className="detail-facts"><div><Clock3 /><span><small>Expected</small>{relativeTime(promise.deadline)}</span></div><div><ShieldCheck /><span><small>Status</small>Promise committed</span></div></div>
+      {promise.note && <blockquote>“{promise.note}”</blockquote>}
+    </section>
+
+    <section className="show-up-location-preview">
+      <div className="show-up-card-title"><div><h2>Committed area</h2><p>1 km across · {details.timezone}</p></div><span className="map-radius-pill"><MapPin />1 km</span></div>
+      <ShowUpMap value={{ lat: details.latitude, lng: details.longitude }} interactive={false} />
+    </section>
+
+    <section className="show-up-proof-card">
+      <div className="proof-copy"><p className="eyebrow">Share this promise</p><h2>Let anyone verify it</h2><p>The QR code opens this committed promise and its details.</p><Button variant="outline" size="sm" onClick={() => void copy(shareUrl, "link")}><Copy />{copied === "link" ? "Copied" : "Copy link"}</Button></div>
+      <div className="show-up-qr"><QRCodeSVG value={shareUrl} size={112} bgColor="transparent" fgColor="currentColor" /></div>
+    </section>
+
+    <section className="agent-handoff-card">
+      <div className="agent-handoff-heading"><span><Bot /></span><div><p className="eyebrow">Agent handoff</p><h2>Use Promise through MCP</h2></div><Button variant="outline" size="sm" onClick={() => void copy(agentInstructions, "agent")}><Copy />{copied === "agent" ? "Copied" : "Copy"}</Button></div>
+      <p>Give this instruction to your agent so it can verify the promise and take care of the next task.</p>
+      <div className="agent-prompt-preview"><code>{agentInstructions}</code></div>
+      <div className="mcp-endpoint"><span>MCP endpoint</span><code>{mcpUrl}</code></div>
+    </section>
+  </div></Shell>;
 }
 
 function DetailPage() {
@@ -260,12 +337,14 @@ function DetailPage() {
   useEffect(() => {
     let active = true;
     let inFlight = false;
+    let immutable = false;
     async function sync(showError: boolean) {
-      if (inFlight) return;
+      if (inFlight || immutable) return;
       inFlight = true;
       try {
         const value = await api.promise(id);
         if (active) {
+          if (value.kind === "SHOW_UP" && value.status === "COMMITTED") immutable = true;
           setPromise((current) => current && current.status === value.status && current.myRole === value.myRole && current.fulfilledAt === value.fulfilledAt ? current : value);
           setError("");
         }
@@ -289,6 +368,7 @@ function DetailPage() {
   }, [id]);
   async function act(action: string) { setBusy(true); setError(""); try { await api.act(id, action); await refresh(); } catch (reason) { setError(reason instanceof Error ? reason.message : "Action failed"); } finally { setBusy(false); } }
   if (!promise) return <Shell><div className="grid min-h-[60vh] place-items-center">{error ? <Empty title="Promise unavailable" copy={error} /> : <LoaderCircle className="animate-spin" />}</div></Shell>;
+  if (promise.kind === "SHOW_UP" && promise.showUp) return <ShowUpDetail promise={promise as HumanPromise & { showUp: NonNullable<HumanPromise["showUp"]> }} />;
   const shareUrl = `${location.origin}/p/${promise.id}`;
   const isBorrower = promise.myRole === "borrower";
   const isLender = promise.myRole === "lender";

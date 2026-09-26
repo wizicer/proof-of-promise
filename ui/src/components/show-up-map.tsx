@@ -9,7 +9,7 @@ export type ShowUpLocation = {
 
 const AREA_RADIUS_METERS = 500;
 
-export function ShowUpMap({ value, onChange }: { value: ShowUpLocation; onChange: (location: ShowUpLocation) => void }) {
+export function ShowUpMap({ value, onChange, interactive = true }: { value: ShowUpLocation; onChange?: (location: ShowUpLocation) => void; interactive?: boolean }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const areaRef = useRef<L.Circle | null>(null);
@@ -30,7 +30,7 @@ export function ShowUpMap({ value, onChange }: { value: ShowUpLocation; onChange
       attributionControl: true,
     }).setView([initialCenter.lat, initialCenter.lng], 12);
 
-    L.control.zoom({ position: "topright" }).addTo(map);
+    if (interactive) L.control.zoom({ position: "topright" }).addTo(map);
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -52,9 +52,18 @@ export function ShowUpMap({ value, onChange }: { value: ShowUpLocation; onChange
       weight: 3,
     }).addTo(map);
 
-    map.on("click", ({ latlng }) => {
-      onChangeRef.current({ lat: latlng.lat, lng: latlng.lng });
-    });
+    if (interactive) {
+      map.on("click", ({ latlng }) => {
+        onChangeRef.current?.({ lat: latlng.lat, lng: latlng.lng });
+      });
+    } else {
+      map.dragging.disable();
+      map.touchZoom.disable();
+      map.doubleClickZoom.disable();
+      map.scrollWheelZoom.disable();
+      map.boxZoom.disable();
+      map.keyboard.disable();
+    }
 
     mapRef.current = map;
     window.setTimeout(() => map.invalidateSize(), 0);
@@ -65,7 +74,7 @@ export function ShowUpMap({ value, onChange }: { value: ShowUpLocation; onChange
       areaRef.current = null;
       centerRef.current = null;
     };
-  }, []);
+  }, [interactive]);
 
   useEffect(() => {
     const nextCenter = L.latLng(value.lat, value.lng);
@@ -73,5 +82,5 @@ export function ShowUpMap({ value, onChange }: { value: ShowUpLocation; onChange
     centerRef.current?.setLatLng(nextCenter);
   }, [value]);
 
-  return <div ref={containerRef} className="show-up-map" aria-label="Choose your show-up area on the map" />;
+  return <div ref={containerRef} className="show-up-map" aria-label={interactive ? "Choose your show-up area on the map" : "Committed show-up area"} />;
 }

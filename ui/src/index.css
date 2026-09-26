@@ -114,13 +114,37 @@
 .show-up-summary span { @apply mt-0.5 text-xs leading-4 text-[#7c654f]; }
 .show-up-note { @apply mt-3 bg-card; }
 .show-up-note textarea { @apply bg-background; }
+.show-up-commit { background: #f39a43; @apply mt-3 h-12 w-full rounded-2xl font-extrabold text-white shadow-sm hover:bg-[#df842e]; }
+.show-up-location-preview { @apply mt-2 grid gap-3 rounded-[1.25rem] border bg-card p-3 shadow-sm; }
+.show-up-location-preview .show-up-map { @apply h-40; }
+.show-up-detail-hero .detail-object { @apply my-3; }
+.show-up-object-icon { background: #f39a43; @apply text-white; }
+.show-up-proof-card { @apply mt-2 grid grid-cols-[minmax(0,1fr)_7rem] items-center gap-3 rounded-[1.25rem] bg-foreground p-3 text-background; }
+.proof-copy h2 { @apply mt-1 text-xl font-black tracking-tight; }
+.proof-copy>p:not(.eyebrow) { @apply mt-1 text-xs leading-4 text-background/65; }
+.proof-copy button { @apply mt-3 rounded-xl border-background/20 bg-background/10 text-background hover:bg-background/20; }
+.show-up-qr { @apply grid size-28 place-items-center rounded-xl bg-white p-2 text-[#0c1739]; }
+.agent-handoff-card { @apply mt-2 rounded-[1.25rem] border bg-card p-3 shadow-sm; }
+.agent-handoff-heading { @apply flex items-center gap-2; }
+.agent-handoff-heading>span { background: #fff0dc; color: #9a4d15; @apply grid size-10 shrink-0 place-items-center rounded-xl; }
+.agent-handoff-heading>span svg { @apply size-5; }
+.agent-handoff-heading h2 { @apply text-base font-black; }
+.agent-handoff-heading button { @apply ml-auto rounded-xl; }
+.agent-handoff-card>p { @apply mt-2 text-xs leading-5 text-muted-foreground; }
+.agent-prompt-preview { @apply relative mt-2 max-h-14 overflow-hidden rounded-xl bg-secondary px-3 py-2 text-[.68rem] leading-5 text-secondary-foreground; }
+.agent-prompt-preview::after { content: ""; @apply pointer-events-none absolute inset-x-0 bottom-0 h-6; background: linear-gradient(transparent, var(--secondary)); }
+.agent-prompt-preview code { @apply font-sans; }
+.mcp-endpoint { @apply mt-2 min-w-0 rounded-xl border border-dashed px-3 py-2; }
+.mcp-endpoint span,.mcp-endpoint code { @apply block; }
+.mcp-endpoint span { @apply text-[.6rem] font-extrabold uppercase tracking-wider text-muted-foreground; }
+.mcp-endpoint code { @apply mt-1 truncate text-[.68rem] text-foreground; }
 .dark .promise-picker-heading h1,.dark .promise-type-card h2 { color: #0c1739; }
 .activity-section { @apply mt-5; }
 .section-title { @apply mb-2 flex items-center gap-2; }.section-title h2 { @apply text-base font-black tracking-tight; }.section-title span { @apply grid size-5 place-items-center rounded-full bg-secondary text-[.65rem] font-bold; }.card-grid { @apply grid gap-2 sm:grid-cols-2; }
 .activity-notice { @apply flex max-w-xl items-center gap-3 rounded-2xl border border-primary/40 bg-primary/15 p-3.5 text-sm transition hover:border-primary hover:bg-primary/25; }.activity-notice .notice-icon { @apply grid size-10 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground; }.activity-notice svg { @apply size-5; }.activity-notice strong,.activity-notice small { @apply block; }.activity-notice strong { @apply font-extrabold; }.activity-notice small { @apply mt-0.5 text-xs text-muted-foreground; }.activity-notice.muted { @apply border-border bg-card text-muted-foreground; }
 .promise-home-notice { @apply min-h-9 max-w-none rounded-xl px-2.5 py-1.5; }.promise-home-notice .notice-icon { @apply size-6 rounded-md; }.promise-home-notice .notice-icon svg,.promise-home-notice>svg { @apply size-3.5; }
 .promise-card { @apply flex min-h-[4.75rem] items-center gap-3 rounded-xl border bg-card px-3 py-2.5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md; }.promise-card-copy { @apply min-w-0 flex-1; }.promise-card-title { @apply flex min-w-0 items-center gap-2; }.promise-card-title strong { @apply min-w-0 flex-1 truncate text-sm font-extrabold; }.promise-card-meta { @apply mt-1 flex items-center gap-2 text-[.68rem] text-muted-foreground; }.promise-card-meta>span:first-child { @apply min-w-0 flex-1 truncate; }.promise-card-meta>span:last-child { @apply flex shrink-0 items-center gap-1; }.promise-card-meta svg { @apply size-3; }.promise-card-arrow { @apply size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5; }.role-tag { @apply shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[.58rem] font-bold uppercase tracking-wide text-secondary-foreground; }
-.status-dot { @apply grid size-7 shrink-0 place-items-center rounded-full bg-secondary; }.status-dot span { @apply size-2 rounded-full bg-muted-foreground; }.status-active span,.status-return_requested span { @apply bg-primary; }.status-fulfilled span { @apply bg-success; }.status-handover_pending span { @apply bg-orange-400; }
+.status-dot { @apply grid size-7 shrink-0 place-items-center rounded-full bg-secondary; }.status-dot span { @apply size-2 rounded-full bg-muted-foreground; }.status-active span,.status-return_requested span { @apply bg-primary; }.status-fulfilled span { @apply bg-success; }.status-handover_pending span,.status-committed span { @apply bg-orange-400; }
 .empty-state { @apply grid justify-items-center rounded-[1.75rem] border border-dashed bg-card/40 px-6 py-14 text-center; }.empty-state>span { @apply grid size-12 place-items-center rounded-2xl bg-secondary text-muted-foreground; }.empty-state h3 { @apply mt-4 font-bold; }.empty-state p { @apply mt-1 max-w-xs text-sm leading-6 text-muted-foreground; }
 .profile-card { @apply mt-8 flex items-center gap-4 rounded-[1.5rem] border bg-card p-5; }.profile-avatar { @apply grid size-12 place-items-center rounded-full bg-primary text-primary-foreground; }.settings-card { @apply mt-5 divide-y rounded-[1.5rem] border bg-card px-5; }.setting-row { @apply flex min-h-24 items-center justify-between gap-4 py-4; }.setting-row strong,.setting-row p { @apply block; }.setting-row p { @apply mt-1 text-xs text-muted-foreground; }
 .detail-page { @apply mx-auto max-w-xl; }
