@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, CalendarCheck2, Check, Clock3, Copy, ExternalLink, LoaderCircle, MapPin, PackageCheck, ShieldCheck, Store } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
+import { BorrowerHistory } from "@/components/BorrowerHistory";
 import { Shell } from "@/layouts/Shell";
 import { Empty } from "@/components/Empty";
 import { ShowUpMap } from "@/components/show-up-map";
@@ -10,7 +11,7 @@ import { statusCopy } from "@/constants/status";
 import { resolvePromiseIcon } from "@/constants/items";
 import { relativeTime } from "@/utils/time";
 import { api } from "@/lib/api";
-import type { HumanPromise } from "@/types";
+import type { BorrowerHistory as BorrowerHistoryData, HumanPromise } from "@/types";
 
 function ShowUpDetail({ promise }: { promise: HumanPromise & { showUp: NonNullable<HumanPromise["showUp"]> } }) {
   const [copied, setCopied] = useState<"link" | "agent" | null>(null);
@@ -58,6 +59,8 @@ export function DetailPage() {
   const [promise, setPromise] = useState<HumanPromise | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [borrowerHistory, setBorrowerHistory] = useState<BorrowerHistoryData | null | undefined>(undefined);
+  const borrowerHistoryEligible = promise?.kind === "RETURN" && promise.status === "REQUESTED" && !promise.myRole;
   async function refresh() { try { setPromise(await api.promise(id)); } catch (reason) { setError(reason instanceof Error ? reason.message : "Promise unavailable"); } }
   useEffect(() => {
     let active = true;
@@ -91,6 +94,16 @@ export function DetailPage() {
       document.removeEventListener("visibilitychange", syncWhenVisible);
     };
   }, [id]);
+  useEffect(() => {
+    if (!borrowerHistoryEligible) {
+      setBorrowerHistory(undefined);
+      return;
+    }
+    let active = true;
+    setBorrowerHistory(undefined);
+    void api.borrowerHistory(id).then((value) => { if (active) setBorrowerHistory(value); }).catch(() => { if (active) setBorrowerHistory(null); });
+    return () => { active = false; };
+  }, [borrowerHistoryEligible, id]);
   async function act(action: string) { setBusy(true); setError(""); try { await api.act(id, action); await refresh(); } catch (reason) { setError(reason instanceof Error ? reason.message : "Action failed"); } finally { setBusy(false); } }
   async function handleBorrowB2C() { setBusy(true); setError(""); try { await api.borrowB2C(id); await refresh(); } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not borrow item"); } finally { setBusy(false); } }
 
@@ -159,5 +172,6 @@ export function DetailPage() {
 
   const displayedDeadline = promise.durationLabel ?? relativeTime(promise.deadline);
   const DetailIcon = resolvePromiseIcon(promise.icon, isB2C ? Store : PackageCheck);
-  return <Shell><div className="detail-page"><Link to="/" className="back-link"><ArrowLeft />Back</Link><section className="detail-hero"><div className="flex items-center justify-between"><span className="role-tag">{isB2C ? (isLender ? "Merchant" : isBorrower ? "Customer" : "Merchant Item") : (promise.myRole ? `You're ${promise.myRole === "borrower" ? "borrowing" : "lending"}` : "Lend request")}</span><span className="text-xs text-muted-foreground">#{promise.id.slice(0, 6)}</span></div><div className="detail-object"><div className="object-icon"><DetailIcon /></div><div><p className="eyebrow text-muted-foreground">{isB2C ? "Merchant Asset" : "The item"}</p><h1>{promise.item}</h1></div></div><div className="detail-facts"><div><Clock3 /><span><small>{isBorrower ? "Return" : "Expected back"}</small>{displayedDeadline}</span></div><div><ShieldCheck /><span><small>Status</small>{state.label}</span></div></div>{promise.note && <blockquote>"{promise.note}"</blockquote>}</section><section className="action-card" aria-live="polite"><div className="progress-track"><span className={`progress-${promise.status.toLowerCase()}`} /></div><p className="eyebrow text-muted-foreground">Right now · Live</p><h2>{action.title}</h2><p>{action.copy}</p>{((isBorrower && promise.status === "REQUESTED") || (isB2C && isLender && promise.status === "REQUESTED")) && <div className="qr-wrap"><QRCodeSVG value={shareUrl} size={104} bgColor="transparent" fgColor="currentColor" /><Button variant="outline" size="sm" onClick={() => void navigator.clipboard.writeText(shareUrl)}><Copy />Copy link</Button></div>}{action.button && <Button size="lg" className="mt-3 h-11 w-full rounded-xl" disabled={busy} onClick={() => void (action.onClick ? action.onClick() : act(action.endpoint!))}>{busy ? <LoaderCircle className="animate-spin" /> : <Check />}{action.button}</Button>}{action.secondary && <Button variant="ghost" className="mt-2 h-9 w-full text-muted-foreground" disabled={busy} onClick={() => void act(action.secondary!.endpoint)}>{action.secondary.label}</Button>}{error && <p role="alert" className="mt-3 text-sm text-destructive">{error}</p>}</section></div></Shell>;
+  const showBorrowerHistory = !isB2C && !isBorrower && !isLender && promise.status === "REQUESTED";
+  return <Shell><div className="detail-page"><Link to="/" className="back-link"><ArrowLeft />Back</Link><section className="detail-hero"><div className="flex items-center justify-between"><span className="role-tag">{isB2C ? (isLender ? "Merchant" : isBorrower ? "Customer" : "Merchant Item") : (promise.myRole ? `You're ${promise.myRole === "borrower" ? "borrowing" : "lending"}` : "Lend request")}</span><span className="text-xs text-muted-foreground">#{promise.id.slice(0, 6)}</span></div><div className="detail-object"><div className="object-icon"><DetailIcon /></div><div><p className="eyebrow text-muted-foreground">{isB2C ? "Merchant Asset" : "The item"}</p><h1>{promise.item}</h1></div></div><div className="detail-facts"><div><Clock3 /><span><small>{isBorrower ? "Return" : "Expected back"}</small>{displayedDeadline}</span></div><div><ShieldCheck /><span><small>Status</small>{state.label}</span></div></div>{promise.note && <blockquote>"{promise.note}"</blockquote>}</section><section className="action-card" aria-live="polite"><div className="progress-track"><span className={`progress-${promise.status.toLowerCase()}`} /></div><p className="eyebrow text-muted-foreground">Right now · Live</p><h2>{action.title}</h2><p>{action.copy}</p>{((isBorrower && promise.status === "REQUESTED") || (isB2C && isLender && promise.status === "REQUESTED")) && <div className="qr-wrap"><QRCodeSVG value={shareUrl} size={104} bgColor="transparent" fgColor="currentColor" /><Button variant="outline" size="sm" onClick={() => void navigator.clipboard.writeText(shareUrl)}><Copy />Copy link</Button></div>}{action.button && <Button size="lg" className="mt-3 h-11 w-full rounded-xl" disabled={busy} onClick={() => void (action.onClick ? action.onClick() : act(action.endpoint!))}>{busy ? <LoaderCircle className="animate-spin" /> : <Check />}{action.button}</Button>}{action.secondary && <Button variant="ghost" className="mt-2 h-9 w-full text-muted-foreground" disabled={busy} onClick={() => void act(action.secondary!.endpoint)}>{action.secondary.label}</Button>}{error && <p role="alert" className="mt-3 text-sm text-destructive">{error}</p>}</section>{showBorrowerHistory && <BorrowerHistory history={borrowerHistory} />}</div></Shell>;
 }

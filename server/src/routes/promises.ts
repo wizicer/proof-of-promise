@@ -1,7 +1,7 @@
 import { Router } from "express";
 import {
   borrowB2CPromise, cancelHandover, createPromise, createShowUpPromise,
-  getPromise, joinPromise, listPromises, transition,
+  getBorrowerHistoryForPromise, getPromise, joinPromise, listPromises, transition,
 } from "../store.js";
 import { asyncRoute, cookieName, requireAuth, routeId } from "../middleware/require-auth.js";
 import { currentPerson } from "../store.js";
@@ -55,6 +55,13 @@ promisesRouter.post("/api/promises/:id/borrow-b2c", asyncRoute(async (request, r
 promisesRouter.get("/api/promises/:id", asyncRoute(async (request, response) => {
   const promise = await getPromise(routeId(request), await currentPerson(request.cookies[cookieName]));
   return promise ? response.json(promise) : response.status(404).json({ error: "Promise not found" });
+}));
+
+promisesRouter.get("/api/promises/:id/borrower-history", asyncRoute(async (request, response) => {
+  const person = await requireAuth(request, response);
+  if (!person) return;
+  const history = await getBorrowerHistoryForPromise(routeId(request), person);
+  return history ? response.json(history) : response.status(404).json({ error: "Borrower history is not available" });
 }));
 
 const actions = [

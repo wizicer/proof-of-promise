@@ -1,7 +1,7 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { mkdir, open, readFile, rename, stat, unlink } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
-import type { HumanPromise, PromiseKind, PromiseRole, PromiseStatus, ShowUpDetails } from "./types.js";
+import type { BorrowerHistory, HumanPromise, PromiseKind, PromiseRole, PromiseStatus, ShowUpDetails } from "./types.js";
 
 type Person = { id: string; sessionId?: string; worldNullifier?: string; oidcSub?: string; createdAt: string };
 type Session = { tokenHash: string; personId: string; expiresAt: number };
@@ -156,6 +156,29 @@ export async function getPromise(id: string, personId?: string | null) {
   return row ? view(row, personId) : null;
 }
 
+export async function getBorrowerHistoryForPromise(id: string, viewerId: string): Promise<BorrowerHistory | null> {
+  const data = await read();
+  const requested = data.promises.find((entry) => entry.id === id);
+  if (!requested || (requested.kind ?? "RETURN") !== "RETURN" || requested.status !== "REQUESTED" || requested.borrowerId === viewerId) return null;
+
+  const history: BorrowerHistory = { total: 0, returnedOnTime: 0, returnedLate: 0, active: 0, overdue: 0 };
+  const now = Date.now();
+  for (const entry of data.promises) {
+    if (entry.id === requested.id || entry.borrowerId !== requested.borrowerId || entry.kind === "SHOW_UP") continue;
+    if (entry.status === "FULFILLED" && entry.fulfilledAt) {
+      if (Date.parse(entry.fulfilledAt) <= Date.parse(entry.deadline)) history.returnedOnTime += 1;
+      else history.returnedLate += 1;
+    } else if (entry.status === "ACTIVE" || entry.status === "RETURN_REQUESTED") {
+      if (Date.parse(entry.deadline) <= now) history.overdue += 1;
+      else history.active += 1;
+    } else {
+      continue;
+    }
+    history.total += 1;
+  }
+  return history;
+}
+
 export async function listPromises(personId: string) {
   return (await read()).promises
     .filter((entry) => entry.borrowerId === personId || entry.lenderId === personId)
@@ -257,4 +280,3 @@ export async function cancelHandover(id: string, personId: string) {
     return true;
   });
 }
-

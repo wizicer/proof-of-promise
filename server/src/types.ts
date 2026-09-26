@@ -20,6 +20,14 @@ export type ShowUpDetails = {
   timezone: string;
 };
 
+export type BorrowerHistory = {
+  total: number;
+  returnedOnTime: number;
+  returnedLate: number;
+  active: number;
+  overdue: number;
+};
+
 export type HumanPromise = {
   id: string;
   item: string;
