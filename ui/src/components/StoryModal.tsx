@@ -226,16 +226,18 @@ export function StoryModal({ open, onClose }: StoryModalProps) {
                   Maybe it only needs two things:
                 </p>
 
-                <div className="mt-4 rounded-2xl border border-primary/40 bg-primary/10 px-5 py-3 shadow-[0_0_25px_rgba(200,255,100,0.15)]">
-                  <h2 className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xl sm:text-2xl font-black text-primary tracking-tight">
+                <div className="mt-5 w-full rounded-2xl border border-primary/40 bg-primary/10 px-3 py-3.5 shadow-[0_0_25px_rgba(200,255,100,0.15)]">
+                  <h2 className="flex items-center justify-center whitespace-nowrap text-[1.05rem] min-[380px]:text-lg min-[410px]:text-xl font-black tracking-tight">
                     <span className="inline-flex items-center gap-1.5 text-white/95">
                       a human
-                      <img src="/world-id-logo.png" alt="World ID" className="inline-block size-5 rounded-full object-cover align-middle shadow-xs" />
-                      <span>,</span>
+                      <img src="/world-id-logo.png" alt="World ID" className="inline-block size-4.5 min-[380px]:size-5 rounded-full object-cover align-middle shadow-xs" />
+                      <span>,&nbsp;</span>
                     </span>
                     <span className="inline-flex items-center gap-1.5 text-primary">
                       and a promise
-                      <img src="/brand-icon.png" alt="Promise" className="inline-block size-5 rounded-md object-contain align-middle shadow-xs" />
+                      <span className="inline-grid size-4.5 min-[380px]:size-5 place-items-center rounded-full bg-white p-[1px] align-middle shadow-xs overflow-hidden">
+                        <img src="/brand-icon.png" alt="Promise" className="size-full rounded-full object-cover" />
+                      </span>
                       <span>.</span>
                     </span>
                   </h2>
