@@ -1,12 +1,26 @@
-# Borrow From A Human
+# Proof of Promise
 
-A mobile-first Proof of Promise app for creating and tracking commitments between verified humans.
+**Proof of Promise** is a mobile-first, Sybil-resistant web application that allows verified unique humans to establish, track, and complete peer-to-peer micro-lending commitments with real-world physical verification.
 
 The repository is an npm workspaces monorepo with two applications:
 
 - `ui/` — React 19, Vite, Tailwind CSS, Shadcn UI, and World ID IDKit
 - `server/` — Node.js, Express, TypeScript, and atomic JSON persistence
 - `packages/shared/` — shared domain types and status definitions
+
+## Principle
+
+**Proof of Promise**  is built around a simple idea: trust should require only the minimum proof necessary.
+
+With **Proof of Promise** , a person can prove that they are a real, unique human through World ID and make a verifiable promise without revealing their identity or unnecessary personal information. The focus is not on proving who someone is, but on proving that a real human made a specific commitment.
+
+For example, imagine Bob is attending ETHGlobal Tokyo and his laptop is about to run out of battery. He asks Alice, a complete stranger, to borrow her charger and promises to return it in two hours. Bob creates a “Promise to Return” in the app, verifies through World ID, and generates a QR code. Alice scans the QR code and accepts the promise. Both sides now have a shared, verifiable record of the commitment without exchanging names, phone numbers, passports, or other sensitive information.
+
+**Proof of Promise**  can support many lightweight real-world commitments beyond lending items, such as “Promise to Show Up” for appointments, meetups, reservations, or other situations where strangers need a small amount of trust before interacting.
+
+At its core, it introduces the concept of “Proof of Promise”: a lightweight trust primitive that proves a real human made a commitment while preserving privacy.
+
+Instead of asking for maximum personal information, **Proof of Promise** aims to create trust with minimal proof.
 
 ## Local development
 
@@ -43,7 +57,6 @@ Run `npm run build` and `npm test` from the repository root before release.
 
 ## How It's Made
 
-**Proof of Promise** is a mobile-first, Sybil-resistant web application that allows verified unique humans to establish, track, and complete peer-to-peer micro-lending commitments with real-world physical verification.
 
 ### Technology Stack
 
