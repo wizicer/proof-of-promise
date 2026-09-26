@@ -92,6 +92,7 @@ function PromiseHome() {
   return <Shell><div className="promise-home">
     <section className="promise-picker-heading">
       <h1>Make a Promise</h1>
+      <p>Choose what kind of promise you want to make.</p>
     </section>
     {promises === null ? <div className="activity-notice promise-home-notice muted"><LoaderCircle className="animate-spin" /><span>Checking your promises…</span></div> : active.length > 0 && <Link to="/activity" className="activity-notice promise-home-notice"><span className="notice-icon"><BellRing /></span><span><strong>{active.length} {active.length === 1 ? "promise" : "promises"} in motion</strong></span><ArrowRight className="ml-auto" /></Link>}
     {!open ? <section className="promise-type-grid" aria-label="Promise types">
