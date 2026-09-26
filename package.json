@@ -2,15 +2,19 @@
   "name": "borrow-from-a-human",
   "version": "1.0.0",
   "private": true,
+  "workspaces": [
+    "server",
+    "ui"
+  ],
   "scripts": {
     "dev": "concurrently --kill-others-on-fail --kill-timeout 1000 --names server,ui --prefix-colors blue,green \"npm run dev:server\" \"npm run dev:ui\"",
-    "dev:server": "npm --prefix server run dev",
-    "dev:ui": "npm --prefix ui run dev",
+    "dev:server": "npm run dev --workspace=server",
+    "dev:ui": "npm run dev --workspace=ui",
     "build": "npm run build:ui && npm run build:server",
-    "build:ui": "npm --prefix ui run build",
-    "build:server": "npm --prefix server run build",
-    "start": "npm --prefix server start",
-    "test": "npm --prefix ui run lint && npm --prefix server test"
+    "build:ui": "npm run build --workspace=ui",
+    "build:server": "npm run build --workspace=server",
+    "start": "npm run start --workspace=server",
+    "test": "npm run lint --workspace=ui && npm run test --workspace=server"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"

@@ -1,5 +1,5 @@
 {
-  "name": "borrow-from-a-human-server",
+  "name": "@borrow-from-a-human/server",
   "version": "1.0.0",
   "private": true,
   "type": "module",
