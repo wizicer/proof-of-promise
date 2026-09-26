@@ -14,5 +14,9 @@ export const api = {
   promise: (id: string) => request<HumanPromise>(`/api/promises/${id}`),
   createPromise: (value: { item: string; deadline: string; note: string }) => request<HumanPromise>("/api/promises", { method: "POST", body: JSON.stringify(value) }),
   createShowUpPromise: (value: { latitude: number; longitude: number; scheduledAt: string; centerTime: string; windowHours: number; timezone: string; note: string }) => request<HumanPromise>("/api/promises/show-up", { method: "POST", body: JSON.stringify(value) }),
+  merchantPromises: () => request<HumanPromise[]>("/api/merchant/promises"),
+  createMerchantPromise: (value: { item: string; deadline: string; note: string; durationLabel?: string }) => request<HumanPromise>("/api/merchant/promises", { method: "POST", body: JSON.stringify(value) }),
+  borrowB2C: (id: string) => request<HumanPromise>(`/api/promises/${id}/borrow-b2c`, { method: "POST" }),
   act: (id: string, action: string) => request<{ success: true }>(`/api/promises/${id}/${action}`, { method: "POST" }),
 };
+

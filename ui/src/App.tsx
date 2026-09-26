@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, NavLink, Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
-import { Activity as ActivityIcon, ArrowLeft, ArrowRight, BatteryCharging, BellRing, BookOpen, Cable, CalendarCheck2, Check, ChevronDown, Clock3, Copy, ExternalLink, Fingerprint, HandHeart, Headphones, Home, LoaderCircle, LogOut, MapPin, Moon, PackageCheck, PackageOpen, PlugZap, ScanLine, ShieldCheck, Sun, Umbrella, Unplug, UserRound, Wrench, type LucideIcon } from "lucide-react";
+import { Activity as ActivityIcon, ArrowLeft, ArrowRight, Baby, BatteryCharging, BellRing, BookOpen, Cable, CalendarCheck2, Check, ChevronDown, Clock3, Copy, ExternalLink, Fingerprint, HandHeart, Headphones, Home, LoaderCircle, LogOut, Luggage, MapPin, Moon, PackageCheck, PackageOpen, PlugZap, QrCode, Scan, ScanLine, ShieldCheck, Store, Sun, Umbrella, Unplug, UserRound, Wrench, type LucideIcon } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -34,11 +34,27 @@ const itemOptions: { label: string; icon: LucideIcon }[] = [
   { label: "Headphones", icon: Headphones },
 ];
 
+const merchantItemOptions: { label: string; icon: LucideIcon }[] = [
+  { label: "Mall Stroller", icon: Baby },
+  { label: "Shared Umbrella", icon: Umbrella },
+  { label: "Power Bank", icon: BatteryCharging },
+  { label: "Wheelchair / Cart", icon: Luggage },
+  { label: "Tool Kit", icon: Wrench },
+  { label: "Headphones / Audio", icon: Headphones },
+];
+
 const returnOptions = [
   { id: "2h", label: "2 hours", milliseconds: 2 * 60 * 60 * 1_000 },
   { id: "1d", label: "1 day", milliseconds: 24 * 60 * 60 * 1_000 },
   { id: "2d", label: "2 days", milliseconds: 2 * 24 * 60 * 60 * 1_000 },
   { id: "1w", label: "1 week", milliseconds: 7 * 24 * 60 * 60 * 1_000 },
+] as const;
+
+const merchantDurationOptions = [
+  { id: "1h", label: "Within 1 hour", milliseconds: 1 * 60 * 60 * 1_000 },
+  { id: "4h", label: "Within 4 hours", milliseconds: 4 * 60 * 60 * 1_000 },
+  { id: "1d", label: "Within 1 day", milliseconds: 24 * 60 * 60 * 1_000 },
+  { id: "2d", label: "Within 2 days", milliseconds: 2 * 24 * 60 * 60 * 1_000 },
 ] as const;
 
 function relativeTime(value: string) {
@@ -104,10 +120,67 @@ function PromiseCard({ promise }: { promise: HumanPromise }) {
   return <Link to={`/p/${promise.id}`} className="promise-card group"><span className={`status-dot status-${promise.status.toLowerCase()}`}><span /></span><span className="promise-card-copy"><span className="promise-card-title"><strong>{promise.item}</strong><span className="role-tag">{promise.kind === "SHOW_UP" ? "Committed" : promise.myRole === "borrower" ? "Borrowing" : "Lending"}</span></span><span className="promise-card-meta"><span>{state.label}</span><span><Clock3 />{relativeTime(promise.deadline)}</span></span></span><ArrowRight className="promise-card-arrow" /></Link>;
 }
 
+function ScanModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const navigate = useNavigate();
+  const [inputVal, setInputVal] = useState("");
+  const [error, setError] = useState("");
+
+  if (!open) return null;
+
+  function handleGo(e: FormEvent) {
+    e.preventDefault();
+    const trimmed = inputVal.trim();
+    if (!trimmed) { setError("Please enter a code or link"); return; }
+    // Check if full URL or just promise ID
+    try {
+      if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+        const url = new URL(trimmed);
+        const match = url.pathname.match(/\/p\/([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) {
+          navigate(`/p/${match[1]}`);
+          onClose();
+          return;
+        }
+      }
+      // If it's a bare promise ID
+      const cleaned = trimmed.replace(/^#/, "");
+      navigate(`/p/${cleaned}`);
+      onClose();
+    } catch {
+      setError("Invalid promise link or ID");
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-sm rounded-[1.75rem] border bg-background p-5 shadow-2xl">
+        <div className="flex items-center justify-between pb-3">
+          <div className="flex items-center gap-2 font-bold"><Scan className="size-5 text-primary" /><span>Scan to Promise</span></div>
+          <Button variant="ghost" size="sm" onClick={onClose}>Close</Button>
+        </div>
+        <div className="my-3 grid place-items-center rounded-2xl border-2 border-dashed border-primary/40 bg-primary/5 py-8 text-center">
+          <QrCode className="size-12 text-primary/70 animate-pulse" />
+          <p className="mt-2 text-xs font-semibold text-muted-foreground">Scan merchant item QR code</p>
+          <p className="mt-0.5 text-[11px] text-muted-foreground/70">Or paste the item link / code below</p>
+        </div>
+        <form onSubmit={handleGo} className="grid gap-3">
+          <div>
+            <Label htmlFor="scan-code" className="text-xs">QR Link or Promise ID</Label>
+            <Input id="scan-code" autoFocus placeholder="e.g. https://.../p/abc123 or abc123" value={inputVal} onChange={(e) => setInputVal(e.target.value)} className="mt-1 h-10 rounded-xl" />
+          </div>
+          {error && <p className="text-xs text-destructive">{error}</p>}
+          <Button type="submit" className="h-11 rounded-xl"><ArrowRight className="size-4" />Open Item</Button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 function PromiseHome() {
   const navigate = useNavigate();
   const [promises, setPromises] = useState<HumanPromise[] | null>(null);
   const [open, setOpen] = useState(false);
+  const [scanOpen, setScanOpen] = useState(false);
   const [itemChoice, setItemChoice] = useState("");
   const [customItem, setCustomItem] = useState("");
   const [returnChoice, setReturnChoice] = useState("2h");
@@ -130,6 +203,7 @@ function PromiseHome() {
 
   const active = promises?.filter((entry) => entry.kind !== "SHOW_UP" && entry.status !== "FULFILLED") ?? [];
   return <Shell><div className="promise-home">
+    <ScanModal open={scanOpen} onClose={() => setScanOpen(false)} />
     <section className="promise-picker-heading">
       <h1>Make a Promise</h1>
       <p>Choose what kind of promise you want to make.</p>
@@ -147,6 +221,12 @@ function PromiseHome() {
         <h2>Promise to Show Up</h2>
         <p>Book a place or time and promise to be there.</p>
         <button type="button" onClick={() => navigate("/show-up")}>Start <ArrowRight /></button>
+      </article>
+      <article className="promise-type-card promise-type-scan">
+        <div className="promise-type-art"><img src="/promise-assets/illustrations/scan-promise.png" alt="Person scanning merchant QR code" /></div>
+        <h2>Scan to Promise</h2>
+        <p>Scan a merchant QR code to borrow items instantly.</p>
+        <button type="button" onClick={() => setScanOpen(true)}>Scan QR <ArrowRight /></button>
       </article>
     </section> :
       <form onSubmit={submit} className="form-card promise-form"><div className="flex items-center justify-between"><div><p className="eyebrow text-muted-foreground">Promise to Return</p><h2>What will you return?</h2></div><Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>Back</Button></div><fieldset><legend>Choose an item</legend><div className="choice-grid">{itemOptions.map(({ label, icon: Icon }) => <button key={label} type="button" className="choice-tile" aria-pressed={itemChoice === label} onClick={() => setItemChoice(label)}><Icon /><span>{label}</span></button>)}<button type="button" className="choice-tile" aria-pressed={itemChoice === "Custom"} onClick={() => setItemChoice("Custom")}><PackageOpen /><span>Custom</span></button></div></fieldset>{itemChoice === "Custom" && <div className="grid gap-2"><Label htmlFor="custom-item">Your item</Label><Input id="custom-item" autoFocus maxLength={80} required placeholder="What are you borrowing?" value={customItem} onChange={(event) => setCustomItem(event.target.value)} /></div>}<fieldset><legend>Return within</legend><div className="duration-grid">{returnOptions.map((option) => <button key={option.id} type="button" aria-pressed={returnChoice === option.id} onClick={() => setReturnChoice(option.id)}>{option.label}</button>)}<button type="button" aria-pressed={returnChoice === "custom"} onClick={() => setReturnChoice("custom")}>Custom</button></div></fieldset>{returnChoice === "custom" && <div className="grid gap-2"><Label htmlFor="deadline">Return date and time</Label><Input id="deadline" type="datetime-local" required value={customDeadline} onChange={(event) => setCustomDeadline(event.target.value)} /></div>}<details className="optional-note"><summary>Add a note <span>(optional)</span></summary><div className="mt-3"><div className="mb-2 text-right text-xs text-muted-foreground">{note.length}/240</div><Textarea id="note" aria-label="Optional note" maxLength={240} placeholder="Condition, meeting point, or anything useful…" value={note} onChange={(event) => setNote(event.target.value)} /></div></details>{error && <p role="alert" className="text-sm text-destructive">{error}</p>}<Button size="lg" disabled={busy || !itemChoice} className="h-14 rounded-2xl">{busy && <LoaderCircle className="animate-spin" />}Make this promise <ArrowRight /></Button></form>}
@@ -259,10 +339,234 @@ function ActivityPage() {
   return <Shell><section className="compact-page-heading"><h1>Activity</h1><p>Every promise, right now.</p></section>{promises === null ? <div className="grid place-items-center py-12"><LoaderCircle className="animate-spin" /></div> : <><section className="activity-section"><div className="section-title"><h2>In motion</h2><span>{active.length}</span></div>{active.length ? <div className="card-grid">{active.map((entry) => <PromiseCard key={entry.id} promise={entry} />)}</div> : <Empty title="Nothing needs attention" copy="Your next active promise will appear here." />}</section>{committed.length > 0 && <section className="activity-section"><div className="section-title"><h2>Committed</h2><span>{committed.length}</span></div><div className="card-grid">{committed.map((entry) => <PromiseCard key={entry.id} promise={entry} />)}</div></section>}<section className="activity-section"><div className="section-title"><h2>Promises kept</h2><span>{done.length}</span></div>{done.length ? <div className="card-grid">{done.map((entry) => <PromiseCard key={entry.id} promise={entry} />)}</div> : <Empty title="Your history is unwritten" copy="Completed return promises will collect here." />}</section></>}</Shell>;
 }
 
+function MerchantPage() {
+  const [items, setItems] = useState<HumanPromise[] | null>(null);
+  const [itemChoice, setItemChoice] = useState("");
+  const [customItem, setCustomItem] = useState("");
+  const [durationChoice, setDurationChoice] = useState("1d");
+  const [customDeadline, setCustomDeadline] = useState("");
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [actionBusy, setActionBusy] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  const [activeTab, setActiveTab] = useState<"inventory" | "list">("inventory");
+
+  async function loadItems() {
+    try {
+      const data = await api.merchantPromises();
+      setItems(data);
+      if (data.length === 0) setActiveTab("list");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load merchant items");
+    }
+  }
+
+  useEffect(() => {
+    void loadItems();
+  }, []);
+
+  async function submitListing(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError("");
+    const item = itemChoice === "Custom" ? customItem.trim() : itemChoice;
+    const preset = merchantDurationOptions.find((o) => o.id === durationChoice);
+    if (!item) { setError("Choose or enter an item name"); setBusy(false); return; }
+    if (!preset && !customDeadline) { setError("Choose expected return duration"); setBusy(false); return; }
+    const deadline = preset ? new Date(Date.now() + preset.milliseconds) : new Date(customDeadline);
+    const durationLabel = preset ? preset.label : "Custom";
+    try {
+      await api.createMerchantPromise({
+        item,
+        deadline: deadline.toISOString(),
+        note: note.trim(),
+        durationLabel,
+      });
+      setItemChoice("");
+      setCustomItem("");
+      setNote("");
+      setActiveTab("inventory");
+      await loadItems();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Could not list item");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleMerchantFinish(id: string) {
+    setActionBusy(id);
+    try {
+      await api.act(id, "merchant-finish");
+      await loadItems();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Could not confirm return");
+    } finally {
+      setActionBusy(null);
+    }
+  }
+
+  return (
+    <Shell>
+      <div className="max-w-xl mx-auto">
+        <Link to="/personal" className="back-link"><ArrowLeft />Personal</Link>
+        <section className="compact-page-heading mb-4">
+          <div className="flex items-center gap-2">
+            <span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground"><Store className="size-5" /></span>
+            <div>
+              <h1 className="text-2xl font-black">Merchant Portal</h1>
+              <p className="text-xs text-muted-foreground">List items with preset return limits. Customers scan QR to borrow.</p>
+            </div>
+          </div>
+        </section>
+
+        <div className="flex rounded-xl bg-secondary p-1 mb-4">
+          <button type="button" className={`flex-1 rounded-lg py-2 text-xs font-bold transition ${activeTab === "inventory" ? "bg-background shadow text-foreground" : "text-muted-foreground"}`} onClick={() => setActiveTab("inventory")}>Inventory ({items?.length ?? 0})</button>
+          <button type="button" className={`flex-1 rounded-lg py-2 text-xs font-bold transition ${activeTab === "list" ? "bg-background shadow text-foreground" : "text-muted-foreground"}`} onClick={() => setActiveTab("list")}>+ List New Item</button>
+        </div>
+
+        {activeTab === "list" ? (
+          <form onSubmit={submitListing} className="form-card promise-form mt-0 border bg-card p-4 sm:p-5 rounded-2xl">
+            <div>
+              <p className="eyebrow text-muted-foreground">B2C Listing</p>
+              <h2 className="text-xl font-black">List an item for borrowing</h2>
+              <p className="text-xs text-muted-foreground mt-1">Preset max return duration. A unique QR code will be generated.</p>
+            </div>
+
+            <fieldset className="mt-3">
+              <legend className="text-xs font-bold mb-2">Item Category</legend>
+              <div className="choice-grid">
+                {merchantItemOptions.map(({ label, icon: Icon }) => (
+                  <button key={label} type="button" className="choice-tile" aria-pressed={itemChoice === label} onClick={() => setItemChoice(label)}>
+                    <Icon />
+                    <span>{label}</span>
+                  </button>
+                ))}
+                <button type="button" className="choice-tile" aria-pressed={itemChoice === "Custom"} onClick={() => setItemChoice("Custom")}>
+                  <PackageOpen />
+                  <span>Custom</span>
+                </button>
+              </div>
+            </fieldset>
+
+            {itemChoice === "Custom" && (
+              <div className="grid gap-2 mt-2">
+                <Label htmlFor="merchant-custom-item" className="text-xs">Custom Item Name</Label>
+                <Input id="merchant-custom-item" autoFocus maxLength={80} required placeholder="e.g. Baby Stroller #3" value={customItem} onChange={(e) => setCustomItem(e.target.value)} />
+              </div>
+            )}
+
+            <fieldset className="mt-3">
+              <legend className="text-xs font-bold mb-2">Maximum Return Window</legend>
+              <div className="duration-grid">
+                {merchantDurationOptions.map((opt) => (
+                  <button key={opt.id} type="button" aria-pressed={durationChoice === opt.id} onClick={() => setDurationChoice(opt.id)}>
+                    {opt.label}
+                  </button>
+                ))}
+                <button type="button" aria-pressed={durationChoice === "custom"} onClick={() => setDurationChoice("custom")}>
+                  Custom
+                </button>
+              </div>
+            </fieldset>
+
+            {durationChoice === "custom" && (
+              <div className="grid gap-2 mt-2">
+                <Label htmlFor="merchant-custom-deadline" className="text-xs">Exact Return Date and Time</Label>
+                <Input id="merchant-custom-deadline" type="datetime-local" required value={customDeadline} onChange={(e) => setCustomDeadline(e.target.value)} />
+              </div>
+            )}
+
+            <div className="mt-3">
+              <Label htmlFor="merchant-note" className="text-xs font-bold">Pickup/Return Instructions <span className="text-muted-foreground font-normal">(Optional)</span></Label>
+              <Textarea id="merchant-note" className="mt-1" maxLength={240} placeholder="e.g. Pick up at front desk, return to customer service counter..." value={note} onChange={(e) => setNote(e.target.value)} />
+            </div>
+
+            {error && <p role="alert" className="text-xs text-destructive mt-2">{error}</p>}
+
+            <Button size="lg" disabled={busy || !itemChoice} className="mt-4 h-12 rounded-xl w-full">
+              {busy && <LoaderCircle className="animate-spin" />}
+              Publish Listing QR <ArrowRight />
+            </Button>
+          </form>
+        ) : (
+          <div className="grid gap-4">
+            {items === null ? (
+              <div className="py-12 grid place-items-center"><LoaderCircle className="animate-spin" /></div>
+            ) : items.length === 0 ? (
+              <div className="empty-state">
+                <span><Store /></span>
+                <h3>No items listed yet</h3>
+                <p>Add your first rental or loan item to generate a customer borrow QR code.</p>
+                <Button className="mt-4 rounded-xl" onClick={() => setActiveTab("list")}>List an item now</Button>
+              </div>
+            ) : (
+              items.map((item) => {
+                const itemUrl = `${location.origin}/p/${item.id}`;
+                const isRequested = item.status === "REQUESTED";
+                const isActive = item.status === "ACTIVE";
+                const isFulfilled = item.status === "FULFILLED";
+                return (
+                  <article key={item.id} className="rounded-2xl border bg-card p-4 shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-base">{item.item}</span>
+                        <span className={`role-tag ${isActive ? "bg-amber-100 text-amber-900" : isFulfilled ? "bg-emerald-100 text-emerald-900" : ""}`}>
+                          {isRequested ? "Ready for Scan" : isActive ? "Lent Out / In Use" : "Returned"}
+                        </span>
+                      </div>
+                      <Link to={`/p/${item.id}`} className="text-xs font-bold text-primary flex items-center gap-0.5">
+                        Details <ArrowRight className="size-3" />
+                      </Link>
+                    </div>
+
+                    <div className="mt-3 flex flex-col sm:flex-row items-center gap-4 rounded-xl bg-secondary/40 p-3">
+                      <div className="grid place-items-center bg-white p-2 rounded-xl shadow-xs shrink-0">
+                        <QRCodeSVG value={itemUrl} size={110} />
+                      </div>
+                      <div className="min-w-0 flex-1 text-xs space-y-1">
+                        <p className="font-semibold text-muted-foreground">Expected Duration: <span className="text-foreground">{item.durationLabel ?? relativeTime(item.deadline)}</span></p>
+                        {item.note && <p className="text-muted-foreground italic truncate">“{item.note}”</p>}
+                        <div className="pt-2 flex flex-wrap gap-2">
+                          <Button variant="outline" size="sm" className="h-8 text-xs rounded-lg" onClick={() => void navigator.clipboard.writeText(itemUrl)}>
+                            <Copy className="size-3" /> Copy QR Link
+                          </Button>
+                          {isActive && (
+                            <Button size="sm" className="h-8 text-xs rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white" disabled={actionBusy === item.id} onClick={() => void handleMerchantFinish(item.id)}>
+                              {actionBusy === item.id ? <LoaderCircle className="animate-spin size-3" /> : <Check className="size-3" />}
+                              Confirm Recovery
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })
+            )}
+          </div>
+        )}
+      </div>
+    </Shell>
+  );
+}
+
 function PersonalPage({ onLogout }: { onLogout: () => Promise<void> }) {
   const [presence, setPresence] = useState(localStorage.getItem("bfa-presence") === "true");
   const { theme, setTheme } = useTheme();
-  return <Shell><section className="compact-page-heading"><h1>Personal</h1><p>Your verified identity and preferences.</p></section><section className="profile-card"><div className="profile-avatar"><Fingerprint /></div><div><p className="text-lg font-bold">Verified human</p><p className="text-sm text-muted-foreground">World ID · Private account</p></div><ShieldCheck className="ml-auto text-success" /></section><section className="settings-card"><div className="setting-row"><div><strong>Fresh presence check</strong><p>Ask World ID to confirm you are present</p></div><Switch checked={presence} onCheckedChange={(value) => { setPresence(value); localStorage.setItem("bfa-presence", String(value)); }} /></div><div className="setting-row"><div><strong>Appearance</strong><p>Light, dark, or follow your device</p></div><DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" className="rounded-xl">{theme === "dark" ? <Moon /> : <Sun />} {theme}<ChevronDown /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onClick={() => setTheme("light")}>Light</DropdownMenuItem><DropdownMenuItem onClick={() => setTheme("dark")}>Dark</DropdownMenuItem><DropdownMenuItem onClick={() => setTheme("system")}>System</DropdownMenuItem></DropdownMenuContent></DropdownMenu></div></section><Button variant="outline" size="lg" className="mt-5 h-14 w-full rounded-2xl text-destructive" onClick={() => void onLogout()}><LogOut />Sign out</Button><p className="mt-8 text-center text-xs leading-5 text-muted-foreground">Sign in with the same World ID on any device to restore your account. Your public promises never expose your World ID details.</p></Shell>;
+  return <Shell><section className="compact-page-heading"><h1>Personal</h1><p>Your verified identity and preferences.</p></section><section className="profile-card"><div className="profile-avatar"><Fingerprint /></div><div><p className="text-lg font-bold">Verified human</p><p className="text-sm text-muted-foreground">World ID · Private account</p></div><ShieldCheck className="ml-auto text-success" /></section>
+    <section className="settings-card">
+      <Link to="/merchant" className="setting-row group transition hover:opacity-80">
+        <div className="flex items-center gap-3">
+          <span className="grid size-10 place-items-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition"><Store className="size-5" /></span>
+          <div>
+            <strong>Merchant Portal</strong>
+            <p>Manage shared assets, list B2C items & QR codes</p>
+          </div>
+        </div>
+        <ArrowRight className="size-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
+      </Link>
+      <div className="setting-row"><div><strong>Fresh presence check</strong><p>Ask World ID to confirm you are present</p></div><Switch checked={presence} onCheckedChange={(value) => { setPresence(value); localStorage.setItem("bfa-presence", String(value)); }} /></div><div className="setting-row"><div><strong>Appearance</strong><p>Light, dark, or follow your device</p></div><DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" className="rounded-xl">{theme === "dark" ? <Moon /> : <Sun />} {theme}<ChevronDown /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onClick={() => setTheme("light")}>Light</DropdownMenuItem><DropdownMenuItem onClick={() => setTheme("dark")}>Dark</DropdownMenuItem><DropdownMenuItem onClick={() => setTheme("system")}>System</DropdownMenuItem></DropdownMenuContent></DropdownMenu></div></section><Button variant="outline" size="lg" className="mt-5 h-14 w-full rounded-2xl text-destructive" onClick={() => void onLogout()}><LogOut />Sign out</Button><p className="mt-8 text-center text-xs leading-5 text-muted-foreground">Sign in with the same World ID on any device to restore your account. Your public promises never expose your World ID details.</p></Shell>;
 }
 
 function ShowUpDetail({ promise }: { promise: HumanPromise & { showUp: NonNullable<HumanPromise["showUp"]> } }) {
@@ -345,25 +649,73 @@ function DetailPage() {
     };
   }, [id]);
   async function act(action: string) { setBusy(true); setError(""); try { await api.act(id, action); await refresh(); } catch (reason) { setError(reason instanceof Error ? reason.message : "Action failed"); } finally { setBusy(false); } }
+  async function handleBorrowB2C() { setBusy(true); setError(""); try { await api.borrowB2C(id); await refresh(); } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not borrow item"); } finally { setBusy(false); } }
+
   if (!promise) return <Shell><div className="grid min-h-[60vh] place-items-center">{error ? <Empty title="Promise unavailable" copy={error} /> : <LoaderCircle className="animate-spin" />}</div></Shell>;
   if (promise.kind === "SHOW_UP" && promise.showUp) return <ShowUpDetail promise={promise as HumanPromise & { showUp: NonNullable<HumanPromise["showUp"]> }} />;
   const shareUrl = `${location.origin}/p/${promise.id}`;
   const isBorrower = promise.myRole === "borrower";
   const isLender = promise.myRole === "lender";
+  const isB2C = promise.kind === "B2C";
   const state = statusCopy[promise.status];
-  let action: { title: string; copy: string; button?: string; endpoint?: string; secondary?: { label: string; endpoint: string } };
-  if (!isBorrower && !isLender) action = promise.status === "REQUESTED" ? { title: `Lend your ${promise.item}?`, copy: "Agree only when you are together and ready to hand it over.", button: "Agree to lend", endpoint: "lend" } : { title: "Already in motion", copy: "Another verified human is keeping this promise." };
-  else if (isBorrower && promise.status === "REQUESTED") action = { title: "Find your lender", copy: "Let the lender scan this code. They will review the promise on their phone." };
-  else if (isBorrower && promise.status === "HANDOVER_PENDING") action = { title: "Do you have it in hand?", copy: "Inspect the physical item first. This starts your active promise.", button: "I received the item", endpoint: "receive" };
-  else if (isLender && promise.status === "HANDOVER_PENDING") action = { title: "Hand it over in person", copy: "The borrower confirms receipt on their device.", secondary: { label: "Cancel this handover", endpoint: "cancel-handover" } };
-  else if (isBorrower && promise.status === "ACTIVE") action = { title: "Ready to give it back?", copy: "Hand the item back first, then ask the lender to confirm.", button: "I handed it back", endpoint: "request-return" };
-  else if (isLender && promise.status === "ACTIVE") action = { title: "The item is out", copy: `The borrower promised to return it ${relativeTime(promise.deadline)}.` };
-  else if (isBorrower && promise.status === "RETURN_REQUESTED") action = { title: "Waiting for their check", copy: "The lender needs to inspect and confirm the returned item.", secondary: { label: "Cancel return request", endpoint: "cancel-return" } };
-  else if (isLender && promise.status === "RETURN_REQUESTED") action = { title: "Check what came back", copy: "Confirm only after the physical item is back with you.", button: "Item returned · Complete", endpoint: "confirm" };
-  else action = { title: "Promise kept", copy: "Both humans completed the handover and return. Nicely done." };
 
-  const displayedDeadline = relativeTime(promise.deadline);
-  return <Shell><div className="detail-page"><Link to="/" className="back-link"><ArrowLeft />Back</Link><section className="detail-hero"><div className="flex items-center justify-between"><span className="role-tag">{promise.myRole ? `You’re ${promise.myRole === "borrower" ? "borrowing" : "lending"}` : "Lend request"}</span><span className="text-xs text-muted-foreground">#{promise.id.slice(0, 6)}</span></div><div className="detail-object"><div className="object-icon"><PackageCheck /></div><div><p className="eyebrow text-muted-foreground">The item</p><h1>{promise.item}</h1></div></div><div className="detail-facts"><div><Clock3 /><span><small>{isBorrower ? "Return" : "Expected back"}</small>{displayedDeadline}</span></div><div><ShieldCheck /><span><small>Status</small>{state.label}</span></div></div>{promise.note && <blockquote>“{promise.note}”</blockquote>}</section><section className="action-card" aria-live="polite"><div className="progress-track"><span className={`progress-${promise.status.toLowerCase()}`} /></div><p className="eyebrow text-muted-foreground">Right now · Live</p><h2>{action.title}</h2><p>{action.copy}</p>{isBorrower && promise.status === "REQUESTED" && <div className="qr-wrap"><QRCodeSVG value={shareUrl} size={104} bgColor="transparent" fgColor="currentColor" /><Button variant="outline" size="sm" onClick={() => void navigator.clipboard.writeText(shareUrl)}><Copy />Copy link</Button></div>}{action.button && <Button size="lg" className="mt-3 h-11 w-full rounded-xl" disabled={busy} onClick={() => void act(action.endpoint!)}>{busy ? <LoaderCircle className="animate-spin" /> : <Check />}{action.button}</Button>}{action.secondary && <Button variant="ghost" className="mt-2 h-9 w-full text-muted-foreground" disabled={busy} onClick={() => void act(action.secondary!.endpoint)}>{action.secondary.label}</Button>}{error && <p role="alert" className="mt-3 text-sm text-destructive">{error}</p>}</section></div></Shell>;
+  let action: { title: string; copy: string; button?: string; endpoint?: string; onClick?: () => Promise<void>; secondary?: { label: string; endpoint: string } };
+
+  if (isB2C) {
+    if (promise.status === "REQUESTED") {
+      if (isLender) {
+        action = {
+          title: "Merchant Listing Ready",
+          copy: "Display this QR code for customers to scan. When they confirm on their device, borrowing starts immediately.",
+        };
+      } else {
+        action = {
+          title: `Borrow ${promise.item}?`,
+          copy: `Merchant preset return duration: ${promise.durationLabel ?? relativeTime(promise.deadline)}. Tap below to confirm and borrow immediately.`,
+          button: "Confirm Borrow (Immediate)",
+          onClick: handleBorrowB2C,
+        };
+      }
+    } else if (promise.status === "ACTIVE") {
+      if (isLender) {
+        action = {
+          title: "Item Lent Out · In Use",
+          copy: "Customer has borrowed the item. When they return it, inspect and confirm recovery below.",
+          button: "Item Returned · Confirm Recovery",
+          endpoint: "merchant-finish",
+        };
+      } else if (isBorrower) {
+        action = {
+          title: `${promise.item} is in use`,
+          copy: "Borrowing credential active. When finished, hand the item back to the merchant. The merchant will confirm return on their screen.",
+        };
+      } else {
+        action = {
+          title: "Item in use",
+          copy: "This item is currently borrowed by another verified human.",
+        };
+      }
+    } else {
+      action = {
+        title: "Promise Kept & Returned",
+        copy: "The item has been returned and confirmed by the merchant. Commitment fulfilled!",
+      };
+    }
+  } else {
+    // Normal C2C flow
+    if (!isBorrower && !isLender) action = promise.status === "REQUESTED" ? { title: `Lend your ${promise.item}?`, copy: "Agree only when you are together and ready to hand it over.", button: "Agree to lend", endpoint: "lend" } : { title: "Already in motion", copy: "Another verified human is keeping this promise." };
+    else if (isBorrower && promise.status === "REQUESTED") action = { title: "Find your lender", copy: "Let the lender scan this code. They will review the promise on their phone." };
+    else if (isBorrower && promise.status === "HANDOVER_PENDING") action = { title: "Do you have it in hand?", copy: "Inspect the physical item first. This starts your active promise.", button: "I received the item", endpoint: "receive" };
+    else if (isLender && promise.status === "HANDOVER_PENDING") action = { title: "Hand it over in person", copy: "The borrower confirms receipt on their device.", secondary: { label: "Cancel this handover", endpoint: "cancel-handover" } };
+    else if (isBorrower && promise.status === "ACTIVE") action = { title: "Ready to give it back?", copy: "Hand the item back first, then ask the lender to confirm.", button: "I handed it back", endpoint: "request-return" };
+    else if (isLender && promise.status === "ACTIVE") action = { title: "The item is out", copy: `The borrower promised to return it ${relativeTime(promise.deadline)}.` };
+    else if (isBorrower && promise.status === "RETURN_REQUESTED") action = { title: "Waiting for their check", copy: "The lender needs to inspect and confirm the returned item.", secondary: { label: "Cancel return request", endpoint: "cancel-return" } };
+    else if (isLender && promise.status === "RETURN_REQUESTED") action = { title: "Check what came back", copy: "Confirm only after the physical item is back with you.", button: "Item returned · Complete", endpoint: "confirm" };
+    else action = { title: "Promise kept", copy: "Both humans completed the handover and return. Nicely done." };
+  }
+
+  const displayedDeadline = promise.durationLabel ?? relativeTime(promise.deadline);
+  return <Shell><div className="detail-page"><Link to="/" className="back-link"><ArrowLeft />Back</Link><section className="detail-hero"><div className="flex items-center justify-between"><span className="role-tag">{isB2C ? (isLender ? "Merchant" : isBorrower ? "Customer" : "Merchant Item") : (promise.myRole ? `You’re ${promise.myRole === "borrower" ? "borrowing" : "lending"}` : "Lend request")}</span><span className="text-xs text-muted-foreground">#{promise.id.slice(0, 6)}</span></div><div className="detail-object"><div className="object-icon"><PackageCheck /></div><div><p className="eyebrow text-muted-foreground">{isB2C ? "Merchant Asset" : "The item"}</p><h1>{promise.item}</h1></div></div><div className="detail-facts"><div><Clock3 /><span><small>{isBorrower ? "Return" : "Expected back"}</small>{displayedDeadline}</span></div><div><ShieldCheck /><span><small>Status</small>{state.label}</span></div></div>{promise.note && <blockquote>“{promise.note}”</blockquote>}</section><section className="action-card" aria-live="polite"><div className="progress-track"><span className={`progress-${promise.status.toLowerCase()}`} /></div><p className="eyebrow text-muted-foreground">Right now · Live</p><h2>{action.title}</h2><p>{action.copy}</p>{((isBorrower && promise.status === "REQUESTED") || (isB2C && isLender && promise.status === "REQUESTED")) && <div className="qr-wrap"><QRCodeSVG value={shareUrl} size={104} bgColor="transparent" fgColor="currentColor" /><Button variant="outline" size="sm" onClick={() => void navigator.clipboard.writeText(shareUrl)}><Copy />Copy link</Button></div>}{action.button && <Button size="lg" className="mt-3 h-11 w-full rounded-xl" disabled={busy} onClick={() => void (action.onClick ? action.onClick() : act(action.endpoint!))}>{busy ? <LoaderCircle className="animate-spin" /> : <Check />}{action.button}</Button>}{action.secondary && <Button variant="ghost" className="mt-2 h-9 w-full text-muted-foreground" disabled={busy} onClick={() => void act(action.secondary!.endpoint)}>{action.secondary.label}</Button>}{error && <p role="alert" className="mt-3 text-sm text-destructive">{error}</p>}</section></div></Shell>;
 }
 
 export function App() {
@@ -373,5 +725,6 @@ export function App() {
   useEffect(() => { refresh().catch(() => setAuth(false)); }, []);
   if (auth === null) return <div className="grid min-h-dvh place-items-center bg-primary"><LoaderCircle className="animate-spin text-primary-foreground" /></div>;
   if (!auth) return <Login onVerified={refresh} />;
-  return <Routes><Route path="/" element={<PromiseHome />} /><Route path="/show-up" element={<ShowUpPage />} /><Route path="/activity" element={<ActivityPage />} /><Route path="/history" element={<Navigate to="/activity" replace />} /><Route path="/personal" element={<PersonalPage onLogout={signOut} />} /><Route path="/p/:id" element={<DetailPage />} /><Route path="*" element={<Navigate to="/" replace />} /></Routes>;
+  return <Routes><Route path="/" element={<PromiseHome />} /><Route path="/show-up" element={<ShowUpPage />} /><Route path="/merchant" element={<MerchantPage />} /><Route path="/activity" element={<ActivityPage />} /><Route path="/history" element={<Navigate to="/activity" replace />} /><Route path="/personal" element={<PersonalPage onLogout={signOut} />} /><Route path="/p/:id" element={<DetailPage />} /><Route path="*" element={<Navigate to="/" replace />} /></Routes>;
 }
+

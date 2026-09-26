@@ -51,13 +51,15 @@
 .promise-picker-heading { @apply mb-2; }
 .promise-picker-heading h1 { @apply text-[2rem] font-black leading-none tracking-[-.05em] sm:text-4xl; }
 .promise-picker-heading p { @apply mt-1 text-[.78rem] leading-5 text-muted-foreground sm:text-sm; }
-.promise-type-grid { @apply mt-2 grid gap-2 md:grid-cols-2; }
+.promise-type-grid { @apply mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3; }
 .promise-type-card { @apply grid min-h-0 grid-cols-[6.75rem_minmax(0,1fr)] grid-rows-[2rem_3.25rem_2.25rem] gap-x-2 gap-y-1 overflow-hidden rounded-[1.25rem] p-3 shadow-[0_5px_14px_rgba(23,44,62,.06)] sm:p-4; }
 .promise-type-return { background: #f0fbf6; }
 .promise-type-show-up { background: #fff7eb; }
+.promise-type-scan { background: #f1f8fd; }
 .promise-type-art { @apply row-span-2 flex h-full items-center justify-center; }
 .promise-type-art>img:first-child { @apply max-h-[4.75rem] w-[6.75rem] object-contain; }
 .promise-type-show-up .promise-type-art>img:first-child { @apply max-h-[4.75rem] w-[4.75rem]; }
+.promise-type-scan .promise-type-art>img:first-child { @apply max-h-[4.75rem] w-[6.75rem] object-contain; }
 .promise-type-card h2 { color: #0c1739; @apply self-end text-[1.2rem] font-black leading-[1.05] tracking-[-.035em]; }
 .promise-type-card>p { color: #78849c; @apply self-start text-[.72rem] leading-4; }
 .promise-type-card>button { @apply col-span-2 flex h-9 w-full items-center justify-center gap-2 rounded-full text-sm font-extrabold text-white shadow-sm transition focus-visible:outline-3 focus-visible:outline-offset-3; }
@@ -66,7 +68,9 @@
 .promise-type-card>button:not(:disabled):hover svg { @apply translate-x-1; }
 .promise-type-return>button { background: #37a983; outline-color: #0c1739; }
 .promise-type-show-up>button { background: #f39a43; outline-color: #0c1739; }
+.promise-type-scan>button { background: #2f7cf6; outline-color: #0c1739; }
 .promise-type-card>button:disabled { @apply cursor-not-allowed opacity-45 shadow-none; }
+
 .promise-form { @apply mx-auto mt-0 border-0 shadow-[0_10px_30px_rgba(23,44,62,.1)]; }
 .promise-form fieldset { @apply min-w-0; }
 .promise-form legend { @apply mb-2 text-sm font-bold; }

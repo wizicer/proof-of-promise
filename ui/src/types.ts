@@ -16,8 +16,10 @@ export type HumanPromise = {
   status: PromiseStatus;
   borrowerVerified: boolean;
   lenderVerified: boolean;
-  kind: "RETURN" | "SHOW_UP";
+  kind: "RETURN" | "SHOW_UP" | "B2C";
   showUp?: ShowUpDetails;
   fulfilledAt?: string;
   myRole?: "borrower" | "lender";
+  durationLabel?: string;
 };
+
