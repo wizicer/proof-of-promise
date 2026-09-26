@@ -66,6 +66,7 @@ export default function HumanVerifyButton({ label, onVerified }: Props) {
           require_user_presence={requestedPresence}
           constraints={CredentialRequest("proof_of_human")}
           handleVerify={async (result) => {
+            console.log("[HumanVerifyButton] handleVerify called with result:", result);
             const r = await fetch("/api/verify-proof", {
               method: "POST",
               headers: { "content-type": "application/json" },
@@ -76,14 +77,19 @@ export default function HumanVerifyButton({ label, onVerified }: Props) {
             });
             if (!r.ok) {
               const data = await r.json().catch(() => ({}));
+              console.error("[HumanVerifyButton] backend /api/verify-proof returned error:", data);
               throw new Error(data.error || "World ID rejected");
             }
           }}
           onSuccess={async () => {
+            console.log("[HumanVerifyButton] verification succeeded");
             setOpen(false);
             await onVerified();
           }}
-          onError={(errCode) => setError(`World ID verification failed: ${errCode}`)}
+          onError={(errCode, debugReport) => {
+            console.error("[HumanVerifyButton] onError triggered:", errCode, debugReport);
+            setError(`World ID verification failed: ${errCode}`);
+          }}
         />
       )}
     </div>
