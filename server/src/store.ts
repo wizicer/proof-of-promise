@@ -2,6 +2,7 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { mkdir, open, readFile, rename, stat, unlink } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import type { BorrowerHistory, HumanPromise, PromiseKind, PromiseRole, PromiseStatus, ShowUpDetails } from "./types.js";
+import { projectRoot } from "./config.js";
 
 type Person = { id: string; sessionId?: string; worldNullifier?: string; oidcSub?: string; createdAt: string };
 type Session = { tokenHash: string; personId: string; expiresAt: number };
@@ -10,7 +11,7 @@ type PromiseRecord = { id: string; item: string; deadline: string; note: string;
 type Data = { version: 1; people: Person[]; sessions: Session[]; challenges: Challenge[]; promises: PromiseRecord[] };
 
 
-const dataPath = resolve(process.env.PROMISE_DATA_PATH ?? ".data/store.json");
+const dataPath = resolve(projectRoot, process.env.PROMISE_DATA_PATH ?? ".data/store.json");
 const lockPath = `${dataPath}.lock`;
 const hash = (value: string) => createHash("sha256").update(value).digest("hex");
 const empty = (): Data => ({ version: 1, people: [], sessions: [], challenges: [], promises: [] });

@@ -17,6 +17,7 @@ before(async () => {
   process.env.PROMISE_DATA_PATH = join(testDirectory, "store.json");
   process.env.WORLD_RP_ID = "rp_1234567890abcdef";
   process.env.WORLD_RP_SIGNING_KEY = "11".repeat(32);
+  process.env.WORLD_ENV = "staging";
   ({ createApp } = await import("./app.js"));
   server = createApp().listen(0);
   await new Promise<void>((resolve) => server.once("listening", resolve));
