@@ -128,7 +128,7 @@ export function StoryModal({ open, onClose }: StoryModalProps) {
                 aria-label={`Go to slide ${idx + 1}`}
                 className={`h-1.5 rounded-full transition-all duration-300 ${
                   idx === currentSlide 
-                    ? "w-7 bg-primary shadow-[0_0_8px_rgba(230,255,100,0.6)]" 
+                    ? "w-7 bg-primary shadow-[0_0_8px_rgba(187,155,252,0.6)]"
                     : idx < currentSlide 
                       ? "w-2 bg-white/60" 
                       : "w-2 bg-white/20"
@@ -274,7 +274,7 @@ export function StoryModal({ open, onClose }: StoryModalProps) {
             {/* Slide 4 */}
             <div className="flex h-full w-full shrink-0 flex-col items-center justify-between px-6 py-6 text-center">
               <div className="my-auto flex flex-col items-center max-w-xs">
-                <div className="relative mb-8 grid size-28 place-items-center rounded-3xl bg-gradient-to-br from-primary/25 to-emerald-500/10 p-4 border border-primary/30 shadow-[0_0_50px_rgba(180,255,100,0.2)]">
+                <div className="relative mb-8 grid size-28 place-items-center rounded-3xl bg-gradient-to-br from-primary/25 to-violet-500/10 p-4 border border-primary/30 shadow-[0_0_50px_rgba(187,155,252,0.2)]">
                   <div className="absolute -inset-1 rounded-3xl bg-primary/20 blur-xl animate-pulse" />
                   <HeartHandshake className="relative size-14 text-primary" />
                 </div>
@@ -287,7 +287,7 @@ export function StoryModal({ open, onClose }: StoryModalProps) {
                   Maybe it only needs two things:
                 </p>
 
-                <div className="mt-5 w-full rounded-2xl border border-primary/40 bg-primary/10 px-3 py-3.5 shadow-[0_0_25px_rgba(200,255,100,0.15)]">
+                <div className="mt-5 w-full rounded-2xl border border-primary/40 bg-primary/10 px-3 py-3.5 shadow-[0_0_25px_rgba(187,155,252,0.15)]">
                   <h2 className="flex items-center justify-center whitespace-nowrap text-[1.05rem] min-[380px]:text-lg min-[410px]:text-xl font-black tracking-tight">
                     <span className="inline-flex items-center gap-1.5 text-white/95">
                       a human
@@ -309,7 +309,7 @@ export function StoryModal({ open, onClose }: StoryModalProps) {
             {/* Slide 5 */}
             <div className="flex h-full w-full shrink-0 flex-col items-center justify-between px-6 py-6 text-center">
               <div className="my-auto flex flex-col items-center max-w-xs">
-                <div className="relative mb-6 grid size-24 place-items-center overflow-hidden rounded-3xl bg-primary p-3 text-primary-foreground shadow-[0_0_50px_rgba(180,255,100,0.4)]">
+                <div className="relative mb-6 grid size-24 place-items-center overflow-hidden rounded-3xl bg-primary p-3 text-primary-foreground shadow-[0_0_50px_rgba(187,155,252,0.4)]">
                   <img src="/brand-icon.png" alt="Promise" className="size-full rounded-2xl object-cover" />
                 </div>
 

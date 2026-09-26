@@ -4,25 +4,25 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: oklch(0.975 0.008 95); --foreground: oklch(0.18 0.035 250);
+  --background: oklch(0.975 0.01 295); --foreground: oklch(0.18 0.035 285);
   --card: oklch(1 0 0); --card-foreground: var(--foreground);
   --popover: var(--card); --popover-foreground: var(--foreground);
-  --primary: oklch(0.9 0.2 124); --primary-foreground: oklch(0.18 0.035 250);
+  --primary: #bb9bfc; --primary-foreground: #24143e;
   --secondary: oklch(0.93 0.02 245); --secondary-foreground: var(--foreground);
-  --muted: oklch(0.94 0.012 95); --muted-foreground: oklch(0.52 0.025 250);
-  --accent: oklch(0.91 0.045 243); --accent-foreground: var(--foreground);
-  --destructive: oklch(0.58 0.22 25); --border: oklch(0.87 0.018 95); --input: var(--border); --ring: oklch(0.72 0.18 124);
+  --muted: oklch(0.94 0.014 295); --muted-foreground: oklch(0.52 0.025 285);
+  --accent: oklch(0.92 0.045 295); --accent-foreground: var(--foreground);
+  --destructive: oklch(0.58 0.22 25); --border: oklch(0.87 0.02 295); --input: var(--border); --ring: #8b5cf6;
   --success: oklch(0.63 0.17 155); --radius: 1rem;
 }
 .dark {
-  --background: oklch(0.15 0.025 250); --foreground: oklch(0.94 0.01 95);
-  --card: oklch(0.2 0.03 250); --card-foreground: var(--foreground);
-  --popover: oklch(0.21 0.03 250); --popover-foreground: var(--foreground);
-  --primary: oklch(0.86 0.2 124); --primary-foreground: oklch(0.16 0.03 250);
-  --secondary: oklch(0.26 0.025 250); --secondary-foreground: var(--foreground);
-  --muted: oklch(0.24 0.02 250); --muted-foreground: oklch(0.7 0.025 250);
-  --accent: oklch(0.28 0.04 245); --accent-foreground: var(--foreground);
-  --destructive: oklch(0.7 0.19 24); --border: oklch(1 0 0 / 12%); --input: oklch(1 0 0 / 15%); --ring: oklch(0.82 0.18 124);
+  --background: oklch(0.15 0.025 285); --foreground: oklch(0.94 0.01 295);
+  --card: oklch(0.2 0.03 285); --card-foreground: var(--foreground);
+  --popover: oklch(0.21 0.03 285); --popover-foreground: var(--foreground);
+  --primary: #c7acff; --primary-foreground: #211334;
+  --secondary: oklch(0.26 0.025 285); --secondary-foreground: var(--foreground);
+  --muted: oklch(0.24 0.02 285); --muted-foreground: oklch(0.7 0.025 285);
+  --accent: oklch(0.3 0.055 295); --accent-foreground: var(--foreground);
+  --destructive: oklch(0.7 0.19 24); --border: oklch(1 0 0 / 12%); --input: oklch(1 0 0 / 15%); --ring: #a982fa;
   --success: oklch(0.72 0.17 155);
 }
 
@@ -36,7 +36,7 @@
 
 @layer base { * { @apply border-border outline-ring/50; } body { @apply bg-background text-foreground antialiased; font-family: Inter, ui-sans-serif, system-ui, sans-serif; } button, a { -webkit-tap-highlight-color: transparent; } }
 
-.login-screen { @apply min-h-dvh overflow-hidden bg-primary text-primary-foreground; background-image: radial-gradient(circle at 20% 15%, oklch(1 0 0 / 45%), transparent 26%), linear-gradient(145deg, transparent 55%, oklch(.79 .21 120 / 50%)); }
+.login-screen { @apply min-h-dvh overflow-hidden bg-primary text-primary-foreground; background-image: radial-gradient(circle at 20% 15%, oklch(1 0 0 / 45%), transparent 26%), linear-gradient(145deg, transparent 55%, oklch(.64 .2 295 / 42%)); }
 .login-orbit { @apply pointer-events-none absolute inset-0 overflow-hidden; }
 .login-orbit span { @apply absolute rounded-full border border-primary-foreground/15; width: 34rem; height: 34rem; right: -22rem; top: 8rem; }
 .login-orbit span:nth-child(2) { width: 24rem; height: 24rem; right: -13rem; top: 13rem; }.login-orbit span:nth-child(3) { width: 14rem; height: 14rem; right: -5rem; top: 18rem; }
