@@ -9,7 +9,7 @@ const path = process.env.PROMISE_DATA_PATH || join(process.cwd(), ".data", "stor
 const lockPath = `${path}.lock`;
 const hash = (value: string) => createHash("sha256").update(value).digest("hex");
 
-type Person = { id: string; worldNullifier: string; createdAt: string };
+type Person = { id: string; sessionId?: string; worldNullifier?: string; createdAt: string };
 type Session = { tokenHash: string; personId: string; expiresAt: number };
 type Challenge = { nonce: string; action: string; expiresAt: number; used: boolean };
 type Record = { id: string; item: string; deadline: string; note: string; createdAt: string; status: PromiseStatus; borrowerId: string; lenderId?: string; fulfilledAt?: string };
@@ -67,6 +67,19 @@ export async function consumeChallenge(nonce: string, action: string) {
     if (!challenge) return false;
     challenge.used = true;
     return true;
+  });
+}
+export async function loginBySession(sessionId: string) {
+  return change(data => {
+    let person = data.people.find(p => p.sessionId === sessionId);
+    if (!person) {
+      person = { id: randomUUID(), sessionId, createdAt: new Date().toISOString() };
+      data.people.push(person);
+    }
+    const token = randomBytes(32).toString("base64url");
+    data.sessions = data.sessions.filter(s => s.expiresAt > Date.now());
+    data.sessions.push({ tokenHash: hash(token), personId: person.id, expiresAt: Date.now() + 30 * 86400_000 });
+    return { id: person.id, token };
   });
 }
 export async function login(nullifier: string) {
