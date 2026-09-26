@@ -21,5 +21,6 @@ export type HumanPromise = {
   fulfilledAt?: string;
   myRole?: "borrower" | "lender";
   durationLabel?: string;
+  icon?: string;
 };
 

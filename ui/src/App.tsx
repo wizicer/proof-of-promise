@@ -1,7 +1,8 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link, NavLink, Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
-import { Activity as ActivityIcon, ArrowLeft, ArrowRight, Baby, BatteryCharging, BellRing, BookOpen, Cable, CalendarCheck2, Check, ChevronDown, Clock3, Copy, ExternalLink, Fingerprint, HandHeart, Headphones, Home, LoaderCircle, LogOut, Luggage, MapPin, Moon, PackageCheck, PackageOpen, PlugZap, QrCode, Scan, ScanLine, ShieldCheck, Store, Sun, Umbrella, Unplug, UserRound, Wrench, type LucideIcon } from "lucide-react";
+import { Activity as ActivityIcon, ArrowLeft, ArrowRight, Baby, BatteryCharging, BellRing, BookOpen, Cable, CalendarCheck2, Camera, Check, ChevronDown, Clock3, Copy, ExternalLink, Fingerprint, Headphones, Home, LoaderCircle, LogOut, Luggage, MapPin, Moon, PackageCheck, PackageOpen, PlugZap, QrCode, Scan, ScanLine, ShieldCheck, Store, Sun, Umbrella, Unplug, UserRound, Wrench, type LucideIcon } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
+import jsQR from "jsqr";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -23,25 +24,47 @@ const statusCopy: Record<PromiseStatus, { label: string; hint: string }> = {
   COMMITTED: { label: "Promise committed", hint: "Ready for you or your agent" },
 };
 
-const itemOptions: { label: string; icon: LucideIcon }[] = [
-  { label: "Power bank", icon: BatteryCharging },
-  { label: "Charger", icon: PlugZap },
-  { label: "Charging cable", icon: Cable },
-  { label: "Adapter", icon: Unplug },
-  { label: "Umbrella", icon: Umbrella },
-  { label: "Book", icon: BookOpen },
-  { label: "Tools", icon: Wrench },
-  { label: "Headphones", icon: Headphones },
+const itemOptions: { label: string; icon: LucideIcon; iconName: string }[] = [
+  { label: "Power bank", icon: BatteryCharging, iconName: "BatteryCharging" },
+  { label: "Charger", icon: PlugZap, iconName: "PlugZap" },
+  { label: "Charging cable", icon: Cable, iconName: "Cable" },
+  { label: "Adapter", icon: Unplug, iconName: "Unplug" },
+  { label: "Umbrella", icon: Umbrella, iconName: "Umbrella" },
+  { label: "Book", icon: BookOpen, iconName: "BookOpen" },
+  { label: "Tools", icon: Wrench, iconName: "Wrench" },
+  { label: "Headphones", icon: Headphones, iconName: "Headphones" },
 ];
 
-const merchantItemOptions: { label: string; icon: LucideIcon }[] = [
-  { label: "Mall Stroller", icon: Baby },
-  { label: "Shared Umbrella", icon: Umbrella },
-  { label: "Power Bank", icon: BatteryCharging },
-  { label: "Wheelchair / Cart", icon: Luggage },
-  { label: "Tool Kit", icon: Wrench },
-  { label: "Headphones / Audio", icon: Headphones },
+const merchantItemOptions: { label: string; icon: LucideIcon; iconName: string }[] = [
+  { label: "Mall Stroller", icon: Baby, iconName: "Baby" },
+  { label: "Shared Umbrella", icon: Umbrella, iconName: "Umbrella" },
+  { label: "Power Bank", icon: BatteryCharging, iconName: "BatteryCharging" },
+  { label: "Wheelchair / Cart", icon: Luggage, iconName: "Luggage" },
+  { label: "Tool Kit", icon: Wrench, iconName: "Wrench" },
+  { label: "Headphones / Audio", icon: Headphones, iconName: "Headphones" },
 ];
+
+const iconMap: Record<string, LucideIcon> = {
+  BatteryCharging,
+  PlugZap,
+  Cable,
+  Unplug,
+  Umbrella,
+  BookOpen,
+  Wrench,
+  Headphones,
+  Baby,
+  Luggage,
+  Store,
+  CalendarCheck2,
+  PackageCheck,
+  PackageOpen,
+};
+
+function resolvePromiseIcon(iconName?: string, defaultIcon: LucideIcon = PackageCheck): LucideIcon {
+  if (iconName && iconMap[iconName]) return iconMap[iconName];
+  return defaultIcon;
+}
 
 const returnOptions = [
   { id: "2h", label: "2 hours", milliseconds: 2 * 60 * 60 * 1_000 },
@@ -66,6 +89,17 @@ function relativeTime(value: string) {
   return formatter.format(Math.round(difference / 86_400_000), "day");
 }
 
+function BrandIcon({ className = "size-5" }: { className?: string }) {
+  return (
+    <img
+      src="/brand-icon.png"
+      alt="Promise"
+      className={`${className} object-contain`}
+      draggable={false}
+    />
+  );
+}
+
 function Login({ onVerified }: { onVerified: () => Promise<void> }) {
   const params = new URLSearchParams(window.location.search);
   const authError = params.get("auth_error");
@@ -74,7 +108,7 @@ function Login({ onVerified }: { onVerified: () => Promise<void> }) {
     <main className="login-screen">
       <div className="login-orbit" aria-hidden="true"><span /><span /><span /></div>
       <section className="relative z-10 mx-auto flex min-h-dvh max-w-md flex-col justify-between px-6 py-8">
-        <div className="flex items-center gap-3 text-sm font-semibold tracking-tight"><span className="brand-mark"><HandHeart /></span> Promise</div>
+        <div className="flex items-center gap-3 text-sm font-semibold tracking-tight"><span className="brand-mark"><BrandIcon className="size-6" /></span> Promise</div>
         <div className="pb-8">
           <p className="eyebrow">Proof of promise</p>
           <h1 className="mt-4 text-[3.4rem] font-black leading-[.92] tracking-[-.07em]">Things move.<br /><span className="text-primary-foreground/55">Trust stays.</span></h1>
@@ -99,7 +133,7 @@ function Shell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-dvh bg-background text-foreground">
       <header className="sticky top-0 z-20 border-b border-border/60 bg-background/85 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-5"><Link to="/" className="flex items-center gap-2 font-extrabold tracking-tight"><span className="brand-mark small"><HandHeart /></span><span>Promise</span></Link><span className="verified-pill"><Fingerprint /> Human verified</span></div>
+        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-5"><Link to="/" className="flex items-center gap-2 font-extrabold tracking-tight"><span className="brand-mark small"><BrandIcon className="size-5.5" /></span><span>Promise</span></Link><span className="verified-pill"><Fingerprint /> Human verified</span></div>
       </header>
       <main className="mx-auto max-w-5xl px-5 pb-28 pt-7">{children}</main>
       <nav className="bottom-nav" aria-label="Primary navigation">
@@ -117,13 +151,136 @@ function Empty({ title, copy }: { title: string; copy: string }) {
 
 function PromiseCard({ promise }: { promise: HumanPromise }) {
   const state = statusCopy[promise.status];
-  return <Link to={`/p/${promise.id}`} className="promise-card group"><span className={`status-dot status-${promise.status.toLowerCase()}`}><span /></span><span className="promise-card-copy"><span className="promise-card-title"><strong>{promise.item}</strong><span className="role-tag">{promise.kind === "SHOW_UP" ? "Committed" : promise.myRole === "borrower" ? "Borrowing" : "Lending"}</span></span><span className="promise-card-meta"><span>{state.label}</span><span><Clock3 />{relativeTime(promise.deadline)}</span></span></span><ArrowRight className="promise-card-arrow" /></Link>;
+  const IconComponent = resolvePromiseIcon(promise.icon, PackageCheck);
+  return (
+    <Link to={`/p/${promise.id}`} className="promise-card group">
+      <span className={`status-dot status-${promise.status.toLowerCase()}`}>
+        <IconComponent className="size-3.5 text-muted-foreground" />
+      </span>
+      <span className="promise-card-copy">
+        <span className="promise-card-title">
+          <strong>{promise.item}</strong>
+          <span className="role-tag">{promise.kind === "SHOW_UP" ? "Committed" : promise.myRole === "borrower" ? "Borrowing" : "Lending"}</span>
+        </span>
+        <span className="promise-card-meta">
+          <span>{state.label}</span>
+          <span><Clock3 />{relativeTime(promise.deadline)}</span>
+        </span>
+      </span>
+      <ArrowRight className="promise-card-arrow" />
+    </Link>
+  );
 }
 
 function ScanModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const navigate = useNavigate();
   const [inputVal, setInputVal] = useState("");
   const [error, setError] = useState("");
+  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraLoading, setCameraLoading] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+
+  function stopCamera() {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    setCameraActive(false);
+    setCameraLoading(false);
+  }
+
+  function handleClose() {
+    stopCamera();
+    setError("");
+    setInputVal("");
+    onClose();
+  }
+
+  function handleScannedCode(code: string) {
+    stopCamera();
+    const trimmed = code.trim();
+    if (!trimmed) return;
+    try {
+      if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+        const url = new URL(trimmed);
+        const match = url.pathname.match(/\/p\/([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) {
+          navigate(`/p/${match[1]}`);
+          handleClose();
+          return;
+        }
+      }
+      const cleaned = trimmed.replace(/^#/, "");
+      navigate(`/p/${cleaned}`);
+      handleClose();
+    } catch {
+      setError(`Scanned code: ${trimmed} (not a valid promise link)`);
+    }
+  }
+
+  async function startCamera() {
+    setError("");
+    setCameraLoading(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.setAttribute("playsinline", "true");
+        await videoRef.current.play();
+        setCameraActive(true);
+        setCameraLoading(false);
+        scanFrame();
+      }
+    } catch (err) {
+      setCameraLoading(false);
+      setError(err instanceof Error ? `Camera permission error: ${err.message}` : "Unable to access camera");
+    }
+  }
+
+  function scanFrame() {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas || video.readyState !== video.HAVE_ENOUGH_DATA) {
+      animationFrameRef.current = requestAnimationFrame(scanFrame);
+      return;
+    }
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const qrCode = jsQR(imageData.data, imageData.width, imageData.height, {
+      inversionAttempts: "dontInvert",
+    });
+    if (qrCode && qrCode.data) {
+      handleScannedCode(qrCode.data);
+      return;
+    }
+    animationFrameRef.current = requestAnimationFrame(scanFrame);
+  }
+
+  useEffect(() => {
+    if (open) {
+      void startCamera();
+    } else {
+      stopCamera();
+    }
+    return () => {
+      stopCamera();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   if (!open) return null;
 
@@ -131,45 +288,52 @@ function ScanModal({ open, onClose }: { open: boolean; onClose: () => void }) {
     e.preventDefault();
     const trimmed = inputVal.trim();
     if (!trimmed) { setError("Please enter a code or link"); return; }
-    // Check if full URL or just promise ID
-    try {
-      if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-        const url = new URL(trimmed);
-        const match = url.pathname.match(/\/p\/([a-zA-Z0-9_-]+)/);
-        if (match && match[1]) {
-          navigate(`/p/${match[1]}`);
-          onClose();
-          return;
-        }
-      }
-      // If it's a bare promise ID
-      const cleaned = trimmed.replace(/^#/, "");
-      navigate(`/p/${cleaned}`);
-      onClose();
-    } catch {
-      setError("Invalid promise link or ID");
-    }
+    handleScannedCode(trimmed);
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
       <div className="w-full max-w-sm rounded-[1.75rem] border bg-background p-5 shadow-2xl">
-        <div className="flex items-center justify-between pb-3">
+        <div className="flex items-center justify-between pb-2">
           <div className="flex items-center gap-2 font-bold"><Scan className="size-5 text-primary" /><span>Scan to Promise</span></div>
-          <Button variant="ghost" size="sm" onClick={onClose}>Close</Button>
+          <Button variant="ghost" size="sm" onClick={handleClose}>Close</Button>
         </div>
-        <div className="my-3 grid place-items-center rounded-2xl border-2 border-dashed border-primary/40 bg-primary/5 py-8 text-center">
-          <QrCode className="size-12 text-primary/70 animate-pulse" />
-          <p className="mt-2 text-xs font-semibold text-muted-foreground">Scan merchant item QR code</p>
-          <p className="mt-0.5 text-[11px] text-muted-foreground/70">Or paste the item link / code below</p>
+
+        <div className="relative my-3 aspect-square w-full overflow-hidden rounded-2xl border-2 border-dashed border-primary/40 bg-black/90">
+          <video ref={videoRef} className={`size-full object-cover ${cameraActive ? "block" : "hidden"}`} />
+          <canvas ref={canvasRef} className="hidden" />
+
+          {cameraLoading && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-background/80 text-foreground">
+              <LoaderCircle className="size-8 animate-spin text-primary" />
+              <p className="text-xs font-semibold">Starting camera…</p>
+            </div>
+          )}
+
+          {!cameraActive && !cameraLoading && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
+              <QrCode className="size-12 text-primary/70 animate-pulse" />
+              <p className="mt-2 text-xs font-semibold text-muted-foreground">Camera is offline</p>
+              <Button size="sm" variant="outline" className="mt-3 rounded-xl gap-1.5" onClick={() => void startCamera()}>
+                <Camera className="size-4" /> Enable Camera
+              </Button>
+            </div>
+          )}
+
+          {cameraActive && (
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <div className="size-48 rounded-2xl border-2 border-primary/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.4)] animate-pulse" />
+            </div>
+          )}
         </div>
-        <form onSubmit={handleGo} className="grid gap-3">
+
+        <form onSubmit={handleGo} className="grid gap-2">
           <div>
-            <Label htmlFor="scan-code" className="text-xs">QR Link or Promise ID</Label>
-            <Input id="scan-code" autoFocus placeholder="e.g. https://.../p/abc123 or abc123" value={inputVal} onChange={(e) => setInputVal(e.target.value)} className="mt-1 h-10 rounded-xl" />
+            <Label htmlFor="scan-code" className="text-xs">Or paste link / code manually</Label>
+            <Input id="scan-code" placeholder="e.g. https://.../p/abc123 or abc123" value={inputVal} onChange={(e) => setInputVal(e.target.value)} className="mt-1 h-9 rounded-xl text-xs" />
           </div>
           {error && <p className="text-xs text-destructive">{error}</p>}
-          <Button type="submit" className="h-11 rounded-xl"><ArrowRight className="size-4" />Open Item</Button>
+          <Button type="submit" size="sm" className="h-9 rounded-xl"><ArrowRight className="size-4" />Open Item</Button>
         </form>
       </div>
     </div>
@@ -197,7 +361,9 @@ function PromiseHome() {
     if (!item) { setError("Choose an item or enter your own"); setBusy(false); return; }
     if (!preset && !customDeadline) { setError("Choose when you will return it"); setBusy(false); return; }
     const deadline = preset ? new Date(Date.now() + preset.milliseconds) : new Date(customDeadline);
-    try { const created = await api.createPromise({ item, deadline: deadline.toISOString(), note }); navigate(`/p/${created.id}`); }
+    const selectedOpt = itemOptions.find((opt) => opt.label === itemChoice);
+    const icon = selectedOpt ? selectedOpt.iconName : undefined;
+    try { const created = await api.createPromise({ item, deadline: deadline.toISOString(), note, icon }); navigate(`/p/${created.id}`); }
     catch (reason) { setError(reason instanceof Error ? reason.message : "Could not make promise"); setBusy(false); }
   }
 
@@ -375,12 +541,15 @@ function MerchantPage() {
     if (!preset && !customDeadline) { setError("Choose expected return duration"); setBusy(false); return; }
     const deadline = preset ? new Date(Date.now() + preset.milliseconds) : new Date(customDeadline);
     const durationLabel = preset ? preset.label : "Custom";
+    const selectedOpt = merchantItemOptions.find((opt) => opt.label === itemChoice);
+    const icon = selectedOpt ? selectedOpt.iconName : undefined;
     try {
       await api.createMerchantPromise({
         item,
         deadline: deadline.toISOString(),
         note: note.trim(),
         durationLabel,
+        icon,
       });
       setItemChoice("");
       setCustomItem("");
@@ -506,10 +675,14 @@ function MerchantPage() {
                 const isRequested = item.status === "REQUESTED";
                 const isActive = item.status === "ACTIVE";
                 const isFulfilled = item.status === "FULFILLED";
+                const ItemIcon = resolvePromiseIcon(item.icon, Store);
                 return (
                   <article key={item.id} className="rounded-2xl border bg-card p-4 shadow-sm">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
+                        <span className="grid size-7 place-items-center rounded-lg bg-primary/10 text-primary">
+                          <ItemIcon className="size-4" />
+                        </span>
                         <span className="font-bold text-base">{item.item}</span>
                         <span className={`role-tag ${isActive ? "bg-amber-100 text-amber-900" : isFulfilled ? "bg-emerald-100 text-emerald-900" : ""}`}>
                           {isRequested ? "Ready for Scan" : isActive ? "Lent Out / In Use" : "Returned"}
@@ -715,7 +888,8 @@ function DetailPage() {
   }
 
   const displayedDeadline = promise.durationLabel ?? relativeTime(promise.deadline);
-  return <Shell><div className="detail-page"><Link to="/" className="back-link"><ArrowLeft />Back</Link><section className="detail-hero"><div className="flex items-center justify-between"><span className="role-tag">{isB2C ? (isLender ? "Merchant" : isBorrower ? "Customer" : "Merchant Item") : (promise.myRole ? `You’re ${promise.myRole === "borrower" ? "borrowing" : "lending"}` : "Lend request")}</span><span className="text-xs text-muted-foreground">#{promise.id.slice(0, 6)}</span></div><div className="detail-object"><div className="object-icon"><PackageCheck /></div><div><p className="eyebrow text-muted-foreground">{isB2C ? "Merchant Asset" : "The item"}</p><h1>{promise.item}</h1></div></div><div className="detail-facts"><div><Clock3 /><span><small>{isBorrower ? "Return" : "Expected back"}</small>{displayedDeadline}</span></div><div><ShieldCheck /><span><small>Status</small>{state.label}</span></div></div>{promise.note && <blockquote>“{promise.note}”</blockquote>}</section><section className="action-card" aria-live="polite"><div className="progress-track"><span className={`progress-${promise.status.toLowerCase()}`} /></div><p className="eyebrow text-muted-foreground">Right now · Live</p><h2>{action.title}</h2><p>{action.copy}</p>{((isBorrower && promise.status === "REQUESTED") || (isB2C && isLender && promise.status === "REQUESTED")) && <div className="qr-wrap"><QRCodeSVG value={shareUrl} size={104} bgColor="transparent" fgColor="currentColor" /><Button variant="outline" size="sm" onClick={() => void navigator.clipboard.writeText(shareUrl)}><Copy />Copy link</Button></div>}{action.button && <Button size="lg" className="mt-3 h-11 w-full rounded-xl" disabled={busy} onClick={() => void (action.onClick ? action.onClick() : act(action.endpoint!))}>{busy ? <LoaderCircle className="animate-spin" /> : <Check />}{action.button}</Button>}{action.secondary && <Button variant="ghost" className="mt-2 h-9 w-full text-muted-foreground" disabled={busy} onClick={() => void act(action.secondary!.endpoint)}>{action.secondary.label}</Button>}{error && <p role="alert" className="mt-3 text-sm text-destructive">{error}</p>}</section></div></Shell>;
+  const DetailIcon = resolvePromiseIcon(promise.icon, isB2C ? Store : PackageCheck);
+  return <Shell><div className="detail-page"><Link to="/" className="back-link"><ArrowLeft />Back</Link><section className="detail-hero"><div className="flex items-center justify-between"><span className="role-tag">{isB2C ? (isLender ? "Merchant" : isBorrower ? "Customer" : "Merchant Item") : (promise.myRole ? `You’re ${promise.myRole === "borrower" ? "borrowing" : "lending"}` : "Lend request")}</span><span className="text-xs text-muted-foreground">#{promise.id.slice(0, 6)}</span></div><div className="detail-object"><div className="object-icon"><DetailIcon /></div><div><p className="eyebrow text-muted-foreground">{isB2C ? "Merchant Asset" : "The item"}</p><h1>{promise.item}</h1></div></div><div className="detail-facts"><div><Clock3 /><span><small>{isBorrower ? "Return" : "Expected back"}</small>{displayedDeadline}</span></div><div><ShieldCheck /><span><small>Status</small>{state.label}</span></div></div>{promise.note && <blockquote>“{promise.note}”</blockquote>}</section><section className="action-card" aria-live="polite"><div className="progress-track"><span className={`progress-${promise.status.toLowerCase()}`} /></div><p className="eyebrow text-muted-foreground">Right now · Live</p><h2>{action.title}</h2><p>{action.copy}</p>{((isBorrower && promise.status === "REQUESTED") || (isB2C && isLender && promise.status === "REQUESTED")) && <div className="qr-wrap"><QRCodeSVG value={shareUrl} size={104} bgColor="transparent" fgColor="currentColor" /><Button variant="outline" size="sm" onClick={() => void navigator.clipboard.writeText(shareUrl)}><Copy />Copy link</Button></div>}{action.button && <Button size="lg" className="mt-3 h-11 w-full rounded-xl" disabled={busy} onClick={() => void (action.onClick ? action.onClick() : act(action.endpoint!))}>{busy ? <LoaderCircle className="animate-spin" /> : <Check />}{action.button}</Button>}{action.secondary && <Button variant="ghost" className="mt-2 h-9 w-full text-muted-foreground" disabled={busy} onClick={() => void act(action.secondary!.endpoint)}>{action.secondary.label}</Button>}{error && <p role="alert" className="mt-3 text-sm text-destructive">{error}</p>}</section></div></Shell>;
 }
 
 export function App() {
