@@ -32,7 +32,7 @@ export default defineConfig({
     VitePWA({
       selfDestroying: true,
       registerType: "autoUpdate",
-      includeAssets: ["pwa-icon.svg", "apple-touch-icon.png"],
+      includeAssets: ["favicon.ico", "favicon-32x32.png", "favicon-16x16.png", "pwa-icon.svg", "apple-touch-icon.png", "brand-icon.png"],
       manifest: {
         name: "Promise",
         short_name: "Promise",

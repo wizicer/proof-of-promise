@@ -40,7 +40,10 @@
 .login-orbit { @apply pointer-events-none absolute inset-0 overflow-hidden; }
 .login-orbit span { @apply absolute rounded-full border border-primary-foreground/15; width: 34rem; height: 34rem; right: -22rem; top: 8rem; }
 .login-orbit span:nth-child(2) { width: 24rem; height: 24rem; right: -13rem; top: 13rem; }.login-orbit span:nth-child(3) { width: 14rem; height: 14rem; right: -5rem; top: 18rem; }
-.brand-mark { @apply grid size-10 place-items-center rounded-2xl bg-foreground text-background; }.brand-mark svg { @apply size-5; }.brand-mark.small { @apply size-9 rounded-xl bg-primary text-primary-foreground; }
+.brand-mark { @apply grid size-10 place-items-center rounded-2xl bg-card border border-border/80 shadow-xs text-foreground; }
+.brand-mark img, .brand-mark svg { @apply size-6 object-contain; }
+.brand-mark.small { @apply size-9 rounded-xl bg-card border border-border/80 shadow-xs; }
+.brand-mark.small img, .brand-mark.small svg { @apply size-5.5 object-contain; }
 .eyebrow { @apply text-[.7rem] font-extrabold uppercase tracking-[.18em]; }
 .verified-pill { @apply flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1.5 text-xs font-bold text-secondary-foreground; }.verified-pill svg { @apply size-3.5; }
 .bottom-nav { @apply fixed inset-x-3 bottom-3 z-30 mx-auto grid max-w-md grid-cols-3 rounded-[1.4rem] border border-border/80 bg-card/90 p-1.5 shadow-xl shadow-foreground/10 backdrop-blur-xl; padding-bottom: max(.375rem, env(safe-area-inset-bottom)); }.bottom-nav a { @apply flex flex-col items-center gap-1 rounded-2xl px-3 py-2 text-[.68rem] font-bold text-muted-foreground transition; }.bottom-nav svg { @apply size-5; }.bottom-nav a.active { @apply bg-primary text-primary-foreground; }
