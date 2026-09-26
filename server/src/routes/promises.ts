@@ -1,6 +1,6 @@
 import { Router } from "express";
 import {
-  borrowB2CPromise, cancelHandover, createPromise, createShowUpPromise,
+  borrowB2CPromise, cancelHandover, createPromise, createShowUpPromise, finishMerchantPromise,
   getBorrowerHistoryForPromise, getPromise, joinPromise, listPromises, transition,
 } from "../store.js";
 import { asyncRoute, cookieName, requireAuth, routeId } from "../middleware/require-auth.js";
@@ -70,7 +70,7 @@ const actions = [
   ["request-return", async (id: string, person: string) => transition(id, "ACTIVE", "RETURN_REQUESTED", person, "borrower"), "Only the borrower can request return"],
   ["cancel-return", async (id: string, person: string) => transition(id, "RETURN_REQUESTED", "ACTIVE", person, "borrower"), "Only the borrower can cancel return"],
   ["confirm", async (id: string, person: string) => transition(id, "RETURN_REQUESTED", "FULFILLED", person, "lender"), "Only the lender can confirm return"],
-  ["merchant-finish", async (id: string, person: string) => transition(id, "ACTIVE", "FULFILLED", person, "lender"), "Only the merchant lender can confirm return"],
+  ["merchant-finish", finishMerchantPromise, "Only the merchant lender can confirm return"],
   ["cancel-handover", cancelHandover, "Only the lender can cancel handover"],
 ] as const;
 

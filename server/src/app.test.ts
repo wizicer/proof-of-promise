@@ -53,6 +53,32 @@ test("missing promise returns a public not-found response", async () => {
   assert.equal(response.status, 404);
 });
 
+test("merchant completion cannot bypass the peer-to-peer return flow", async () => {
+  const {
+    borrowB2CPromise,
+    createB2CPromise,
+    createPromise,
+    currentPerson,
+    finishMerchantPromise,
+    joinPromise,
+    loginByWorldSession,
+    transition,
+  } = await import("./store.js");
+  const borrower = (await currentPerson(await loginByWorldSession("session_state-machine-borrower")))!;
+  const lender = (await currentPerson(await loginByWorldSession("session_state-machine-lender")))!;
+  const customer = (await currentPerson(await loginByWorldSession("session_state-machine-customer")))!;
+  const deadline = new Date(Date.now() + 3_600_000).toISOString();
+
+  const peerPromise = await createPromise(borrower, "Peer umbrella", deadline, "");
+  assert.equal(await joinPromise(peerPromise.id, lender), true);
+  assert.equal(await transition(peerPromise.id, "HANDOVER_PENDING", "ACTIVE", borrower, "borrower"), true);
+  assert.equal(await finishMerchantPromise(peerPromise.id, lender), false);
+
+  const merchantPromise = await createB2CPromise(lender, "Shop umbrella", deadline, "");
+  assert.ok(await borrowB2CPromise(merchantPromise.id, customer));
+  assert.equal(await finishMerchantPromise(merchantPromise.id, lender), true);
+});
+
 test("restores the same account and activity after logout", async () => {
   const nativeFetch = globalThis.fetch;
   globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) => {

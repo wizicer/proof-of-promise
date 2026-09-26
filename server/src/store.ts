@@ -271,6 +271,21 @@ export async function borrowB2CPromise(id: string, customerId: string) {
   });
 }
 
+export async function finishMerchantPromise(id: string, merchantId: string) {
+  return change((data) => {
+    const row = data.promises.find((entry) =>
+      entry.id === id
+      && entry.kind === "B2C"
+      && entry.status === "ACTIVE"
+      && entry.lenderId === merchantId
+    );
+    if (!row) return false;
+    row.status = "FULFILLED";
+    row.fulfilledAt = new Date().toISOString();
+    return true;
+  });
+}
+
 export async function cancelHandover(id: string, personId: string) {
   return change((data) => {
     const row = data.promises.find((entry) => entry.id === id && entry.status === "HANDOVER_PENDING" && entry.lenderId === personId);
