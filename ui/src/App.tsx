@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, NavLink, Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
-import { Activity as ActivityIcon, ArrowLeft, ArrowRight, BatteryCharging, BellRing, BookOpen, Cable, Check, ChevronDown, Clock3, Copy, Fingerprint, HandHeart, Headphones, Home, LoaderCircle, LogOut, Moon, PackageCheck, PackageOpen, PlugZap, ScanLine, ShieldCheck, Sun, Umbrella, Unplug, UserRound, Wrench, type LucideIcon } from "lucide-react";
+import { Activity as ActivityIcon, ArrowLeft, ArrowRight, BatteryCharging, BellRing, BookOpen, Cable, Check, ChevronDown, Clock3, Copy, Fingerprint, HandHeart, Headphones, Home, LoaderCircle, LogOut, MapPin, Moon, PackageCheck, PackageOpen, PlugZap, ScanLine, ShieldCheck, Sun, Umbrella, Unplug, UserRound, Wrench, type LucideIcon } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { WorldIdButton } from "@/components/world-id-button";
+import { ShowUpMap, type ShowUpLocation } from "@/components/show-up-map";
 import { useTheme } from "@/components/theme-provider";
 import { api } from "@/lib/api";
 import type { HumanPromise, PromiseStatus } from "@/types";
@@ -136,10 +137,66 @@ function PromiseHome() {
         <div className="promise-type-art"><img src="/promise-assets/illustrations/reservation-calendar.png" alt="Calendar with a check mark" /></div>
         <h2>Promise to Show Up</h2>
         <p>Book a place or time and promise to be there.</p>
-        <button type="button" disabled>Coming soon</button>
+        <button type="button" onClick={() => navigate("/show-up")}>Start <ArrowRight /></button>
       </article>
     </section> :
       <form onSubmit={submit} className="form-card promise-form"><div className="flex items-center justify-between"><div><p className="eyebrow text-muted-foreground">Promise to Return</p><h2>What will you return?</h2></div><Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>Back</Button></div><fieldset><legend>Choose an item</legend><div className="choice-grid">{itemOptions.map(({ label, icon: Icon }) => <button key={label} type="button" className="choice-tile" aria-pressed={itemChoice === label} onClick={() => setItemChoice(label)}><Icon /><span>{label}</span></button>)}<button type="button" className="choice-tile" aria-pressed={itemChoice === "Custom"} onClick={() => setItemChoice("Custom")}><PackageOpen /><span>Custom</span></button></div></fieldset>{itemChoice === "Custom" && <div className="grid gap-2"><Label htmlFor="custom-item">Your item</Label><Input id="custom-item" autoFocus maxLength={80} required placeholder="What are you borrowing?" value={customItem} onChange={(event) => setCustomItem(event.target.value)} /></div>}<fieldset><legend>Return within</legend><div className="duration-grid">{returnOptions.map((option) => <button key={option.id} type="button" aria-pressed={returnChoice === option.id} onClick={() => setReturnChoice(option.id)}>{option.label}</button>)}<button type="button" aria-pressed={returnChoice === "custom"} onClick={() => setReturnChoice("custom")}>Custom</button></div></fieldset>{returnChoice === "custom" && <div className="grid gap-2"><Label htmlFor="deadline">Return date and time</Label><Input id="deadline" type="datetime-local" required value={customDeadline} onChange={(event) => setCustomDeadline(event.target.value)} /></div>}<details className="optional-note"><summary>Add a note <span>(optional)</span></summary><div className="mt-3"><div className="mb-2 text-right text-xs text-muted-foreground">{note.length}/240</div><Textarea id="note" aria-label="Optional note" maxLength={240} placeholder="Condition, meeting point, or anything useful…" value={note} onChange={(event) => setNote(event.target.value)} /></div></details>{error && <p role="alert" className="text-sm text-destructive">{error}</p>}<Button size="lg" disabled={busy || !itemChoice} className="h-14 rounded-2xl">{busy && <LoaderCircle className="animate-spin" />}Make this promise <ArrowRight /></Button></form>}
+  </div></Shell>;
+}
+
+const showUpTimes = ["09:00", "12:00", "18:00", "21:00"];
+const showUpWindows = [1, 2, 4];
+
+function shiftClock(time: string, hours: number) {
+  const [hour, minute] = time.split(":").map(Number);
+  const total = ((hour * 60 + minute + Math.round(hours * 60)) % 1_440 + 1_440) % 1_440;
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+}
+
+function ShowUpPage() {
+  const [location, setLocation] = useState<ShowUpLocation>({ lat: 35.6812, lng: 139.7671 });
+  const [timeChoice, setTimeChoice] = useState("18:00");
+  const [customTime, setCustomTime] = useState("");
+  const [windowChoice, setWindowChoice] = useState("2");
+  const [customWindow, setCustomWindow] = useState("2");
+  const [note, setNote] = useState("");
+  const time = timeChoice === "custom" ? customTime : timeChoice;
+  const windowHours = windowChoice === "custom" ? Number(customWindow) : Number(windowChoice);
+  const hasWindow = Number.isFinite(windowHours) && windowHours > 0;
+
+  return <Shell><div className="show-up-page">
+    <Link to="/" className="back-link"><ArrowLeft />Back</Link>
+    <section className="show-up-heading">
+      <p className="eyebrow">Promise to Show Up</p>
+      <h1>Where will you be?</h1>
+      <p>Choose an area, then set the time window when you expect to be there.</p>
+    </section>
+
+    <section className="show-up-card map-card">
+      <div className="show-up-card-title"><div><h2>Choose the area</h2><p>Tap anywhere to move the 5 km area.</p></div><span className="map-radius-pill"><MapPin />5 km</span></div>
+      <ShowUpMap value={location} onChange={setLocation} />
+      <p className="map-coordinates" aria-live="polite">Center · {location.lat.toFixed(4)}, {location.lng.toFixed(4)}</p>
+    </section>
+
+    <section className="show-up-card">
+      <fieldset>
+        <legend>What time?</legend>
+        <div className="show-up-options">{showUpTimes.map((option) => <button key={option} type="button" aria-pressed={timeChoice === option} onClick={() => setTimeChoice(option)}>{option}</button>)}<button type="button" aria-pressed={timeChoice === "custom"} onClick={() => setTimeChoice("custom")}>Custom</button></div>
+      </fieldset>
+      {timeChoice === "custom" && <div className="show-up-custom"><Label htmlFor="show-up-time">Choose a time</Label><Input id="show-up-time" type="time" value={customTime} onChange={(event) => setCustomTime(event.target.value)} /></div>}
+      <fieldset>
+        <legend>How flexible?</legend>
+        <div className="show-up-options window-options">{showUpWindows.map((hours) => <button key={hours} type="button" aria-pressed={windowChoice === String(hours)} onClick={() => setWindowChoice(String(hours))}>± {hours} {hours === 1 ? "hour" : "hours"}</button>)}<button type="button" aria-pressed={windowChoice === "custom"} onClick={() => setWindowChoice("custom")}>Custom</button></div>
+      </fieldset>
+      {windowChoice === "custom" && <div className="show-up-custom"><Label htmlFor="show-up-window">Hours before and after</Label><Input id="show-up-window" type="number" min="0.5" max="12" step="0.5" value={customWindow} onChange={(event) => setCustomWindow(event.target.value)} /></div>}
+    </section>
+
+    <section className="show-up-summary" aria-live="polite">
+      <div className="show-up-summary-icon"><Clock3 /></div>
+      <div><p>Your show-up window</p>{time && hasWindow ? <><strong>{shiftClock(time, -windowHours)}–{shiftClock(time, windowHours)}</strong><span>Around {time}, within ±{windowHours} {windowHours === 1 ? "hour" : "hours"}, inside the selected 5 km area.</span></> : <span>Choose a valid time and window to preview it.</span>}</div>
+    </section>
+
+    <details className="optional-note show-up-note"><summary>Add a note <span>(optional)</span></summary><div className="mt-3"><div className="mb-2 text-right text-xs text-muted-foreground">{note.length}/240</div><Textarea aria-label="Optional note" maxLength={240} placeholder="Meeting point, how to recognize you, or anything useful…" value={note} onChange={(event) => setNote(event.target.value)} /></div></details>
   </div></Shell>;
 }
 
@@ -229,5 +286,5 @@ export function App() {
   useEffect(() => { refresh().catch(() => setAuth(false)); }, []);
   if (auth === null) return <div className="grid min-h-dvh place-items-center bg-primary"><LoaderCircle className="animate-spin text-primary-foreground" /></div>;
   if (!auth) return <Login onVerified={refresh} />;
-  return <Routes><Route path="/" element={<PromiseHome />} /><Route path="/activity" element={<ActivityPage />} /><Route path="/history" element={<Navigate to="/activity" replace />} /><Route path="/personal" element={<PersonalPage onLogout={signOut} />} /><Route path="/p/:id" element={<DetailPage />} /><Route path="*" element={<Navigate to="/" replace />} /></Routes>;
+  return <Routes><Route path="/" element={<PromiseHome />} /><Route path="/show-up" element={<ShowUpPage />} /><Route path="/activity" element={<ActivityPage />} /><Route path="/history" element={<Navigate to="/activity" replace />} /><Route path="/personal" element={<PersonalPage onLogout={signOut} />} /><Route path="/p/:id" element={<DetailPage />} /><Route path="*" element={<Navigate to="/" replace />} /></Routes>;
 }
