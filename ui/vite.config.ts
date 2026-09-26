@@ -59,7 +59,7 @@ export default defineConfig({
           },
         ],
       },
-      devOptions: { enabled: true, navigateFallbackAllowlist: [/^(?!\/api\/)/] },
+      devOptions: { enabled: false },
     }),
   ],
   envDir: path.resolve(__dirname, ".."),
