@@ -8,6 +8,7 @@ const internalPort = Number(process.env.VITE_INTERNAL_PORT ?? 5173);
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  envDir: path.resolve(__dirname, ".."),
   resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
   server: {
     host: "127.0.0.1",

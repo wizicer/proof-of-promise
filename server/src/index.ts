@@ -1,6 +1,15 @@
-import "dotenv/config";
+import dotenv from "dotenv";
 import { createProxyMiddleware } from "http-proxy-middleware";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createApp } from "./app.js";
+
+const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+dotenv.config({
+  path: [resolve(projectRoot, ".env.local"), resolve(projectRoot, ".env")],
+  override: false,
+  quiet: true,
+});
 
 const port = Number(process.env.PORT ?? 3000);
 const production = process.env.NODE_ENV === "production";

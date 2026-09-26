@@ -10,7 +10,7 @@ The active project is intentionally split into two independent applications:
 
 ## Local development
 
-Copy `.env.example` to `.env.local`, then expose the variables to each process using your preferred environment loader. The UI needs `VITE_WORLD_APP_ID` and `VITE_WORLD_ENV`; the server needs `WORLD_RP_ID`, `WORLD_RP_SIGNING_KEY`, and `WORLD_ENV`.
+Copy `.env.example` to the repository-root `.env.local`. Both Vite and Express load that shared file: the UI uses `VITE_WORLD_APP_ID` and `VITE_WORLD_ENV`; the server uses `WORLD_RP_ID`, `WORLD_RP_SIGNING_KEY`, and `WORLD_ENV`.
 
 ```bash
 npm install
