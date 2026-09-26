@@ -9,7 +9,7 @@ export const promiseStatuses = [
 
 export type PromiseStatus = (typeof promiseStatuses)[number];
 export type PromiseRole = "borrower" | "lender";
-export type PromiseKind = "RETURN" | "SHOW_UP";
+export type PromiseKind = "RETURN" | "SHOW_UP" | "B2C";
 
 export type ShowUpDetails = {
   latitude: number;
@@ -33,4 +33,6 @@ export type HumanPromise = {
   showUp?: ShowUpDetails;
   fulfilledAt?: string;
   myRole?: PromiseRole;
+  durationLabel?: string;
 };
+

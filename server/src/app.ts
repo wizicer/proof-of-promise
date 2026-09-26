@@ -8,9 +8,10 @@ import { fileURLToPath } from "node:url";
 import type { RequestHandler } from "express";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import {
-  cancelHandover, consumeChallenge, createChallenge, createPromise, createShowUpPromise, currentPerson,
-  getPromise, joinPromise, listPromises, loginByNullifier, loginByOidcSub, loginByWorldSession, logout, transition,
+  borrowB2CPromise, cancelHandover, consumeChallenge, createB2CPromise, createChallenge, createPromise, createShowUpPromise, currentPerson,
+  getPromise, joinPromise, listMerchantPromises, listPromises, loginByNullifier, loginByOidcSub, loginByWorldSession, logout, transition,
 } from "./store.js";
+
 
 const cookieName = "bfa_session";
 const registrationAction = "borrow-from-a-human-register";
@@ -299,6 +300,30 @@ export function createApp(frontend: FrontendOptions = {}) {
     }));
   }));
 
+
+  app.get("/api/merchant/promises", asyncRoute(async (request, response) => {
+    const person = await currentPerson(request.cookies[cookieName]);
+    if (!person) return response.status(401).json({ error: "Sign in first" });
+    return response.json(await listMerchantPromises(person));
+  }));
+
+  app.post("/api/merchant/promises", asyncRoute(async (request, response) => {
+    const person = await currentPerson(request.cookies[cookieName]);
+    if (!person) return response.status(401).json({ error: "Sign in first" });
+    const { item, deadline, note = "", durationLabel } = request.body ?? {};
+    if (typeof item !== "string" || !item.trim() || item.trim().length > 80 || typeof deadline !== "string" || !Number.isFinite(Date.parse(deadline)) || Date.parse(deadline) <= Date.now() || typeof note !== "string" || note.length > 240) {
+      return response.status(400).json({ error: "Enter an item name, a future deadline, and a note under 240 characters" });
+    }
+    return response.status(201).json(await createB2CPromise(person, item.trim(), new Date(deadline).toISOString(), note.trim(), typeof durationLabel === "string" ? durationLabel : undefined));
+  }));
+
+  app.post("/api/promises/:id/borrow-b2c", asyncRoute(async (request, response) => {
+    const person = await currentPerson(request.cookies[cookieName]);
+    if (!person) return response.status(401).json({ error: "Sign in first" });
+    const updated = await borrowB2CPromise(routeId(request), person);
+    return updated ? response.json(updated) : response.status(409).json({ error: "Item not available or cannot borrow own listing" });
+  }));
+
   app.get("/api/promises/:id", asyncRoute(async (request, response) => {
     const promise = await getPromise(routeId(request), await currentPerson(request.cookies[cookieName]));
     return promise ? response.json(promise) : response.status(404).json({ error: "Promise not found" });
@@ -310,8 +335,10 @@ export function createApp(frontend: FrontendOptions = {}) {
     ["request-return", async (id: string, person: string) => transition(id, "ACTIVE", "RETURN_REQUESTED", person, "borrower"), "Only the borrower can request return"],
     ["cancel-return", async (id: string, person: string) => transition(id, "RETURN_REQUESTED", "ACTIVE", person, "borrower"), "Only the borrower can cancel return"],
     ["confirm", async (id: string, person: string) => transition(id, "RETURN_REQUESTED", "FULFILLED", person, "lender"), "Only the lender can confirm return"],
+    ["merchant-finish", async (id: string, person: string) => transition(id, "ACTIVE", "FULFILLED", person, "lender"), "Only the merchant lender can confirm return"],
     ["cancel-handover", cancelHandover, "Only the lender can cancel handover"],
   ] as const;
+
   for (const [action, operation, error] of actions) {
     app.post(`/api/promises/:id/${action}`, asyncRoute(async (request, response) => {
       const person = await currentPerson(request.cookies[cookieName]);

@@ -6,8 +6,9 @@ import type { HumanPromise, PromiseKind, PromiseRole, PromiseStatus, ShowUpDetai
 type Person = { id: string; sessionId?: string; worldNullifier?: string; oidcSub?: string; createdAt: string };
 type Session = { tokenHash: string; personId: string; expiresAt: number };
 type Challenge = { nonce: string; action: string; expiresAt: number; used: boolean };
-type PromiseRecord = { id: string; item: string; deadline: string; note: string; createdAt: string; status: PromiseStatus; borrowerId: string; lenderId?: string; fulfilledAt?: string; kind?: PromiseKind; showUp?: ShowUpDetails };
+type PromiseRecord = { id: string; item: string; deadline: string; note: string; createdAt: string; status: PromiseStatus; borrowerId: string; lenderId?: string; fulfilledAt?: string; kind?: PromiseKind; showUp?: ShowUpDetails; durationLabel?: string };
 type Data = { version: 1; people: Person[]; sessions: Session[]; challenges: Challenge[]; promises: PromiseRecord[] };
+
 
 const dataPath = resolve(process.env.PROMISE_DATA_PATH ?? ".data/store.json");
 const lockPath = `${dataPath}.lock`;
@@ -76,9 +77,11 @@ function view(row: PromiseRecord, personId?: string | null): HumanPromise {
     kind: row.kind ?? "RETURN",
     ...(row.showUp ? { showUp: row.showUp } : {}),
     ...(row.fulfilledAt ? { fulfilledAt: row.fulfilledAt } : {}),
+    ...(row.durationLabel ? { durationLabel: row.durationLabel } : {}),
     ...(personId === row.borrowerId ? { myRole: "borrower" as const } : personId === row.lenderId ? { myRole: "lender" as const } : {}),
   };
 }
+
 
 export async function createChallenge(nonce: string, action: string, expiresAt: number) {
   await change((data) => {
@@ -205,6 +208,43 @@ export async function joinPromise(id: string, personId: string) {
   });
 }
 
+export async function createB2CPromise(merchantId: string, item: string, deadline: string, note: string, durationLabel?: string) {
+  return change((data) => {
+    const row: PromiseRecord = {
+      id: randomUUID(),
+      item,
+      deadline,
+      note,
+      createdAt: new Date().toISOString(),
+      status: "REQUESTED",
+      borrowerId: "", // unassigned until customer scans and borrows
+      lenderId: merchantId,
+      kind: "B2C",
+      durationLabel,
+    };
+    data.promises.push(row);
+    return view(row, merchantId);
+  });
+}
+
+export async function listMerchantPromises(merchantId: string) {
+  return (await read()).promises
+    .filter((entry) => entry.kind === "B2C" && entry.lenderId === merchantId)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .map((entry) => view(entry, merchantId));
+}
+
+export async function borrowB2CPromise(id: string, customerId: string) {
+  return change((data) => {
+    const row = data.promises.find((entry) => entry.id === id && entry.kind === "B2C" && entry.status === "REQUESTED");
+    if (!row) return null;
+    if (row.lenderId === customerId) return null; // cannot borrow own item
+    row.borrowerId = customerId;
+    row.status = "ACTIVE";
+    return view(row, customerId);
+  });
+}
+
 export async function cancelHandover(id: string, personId: string) {
   return change((data) => {
     const row = data.promises.find((entry) => entry.id === id && entry.status === "HANDOVER_PENDING" && entry.lenderId === personId);
@@ -214,3 +254,4 @@ export async function cancelHandover(id: string, personId: string) {
     return true;
   });
 }
+
