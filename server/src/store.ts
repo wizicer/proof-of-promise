@@ -3,7 +3,7 @@ import { mkdir, open, readFile, rename, stat, unlink } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import type { HumanPromise, PromiseKind, PromiseRole, PromiseStatus, ShowUpDetails } from "./types.js";
 
-type Person = { id: string; loginHandle?: string; sessionId?: string; worldNullifier?: string; createdAt: string };
+type Person = { id: string; sessionId?: string; worldNullifier?: string; createdAt: string };
 type Session = { tokenHash: string; personId: string; expiresAt: number };
 type Challenge = { nonce: string; action: string; expiresAt: number; used: boolean };
 type PromiseRecord = { id: string; item: string; deadline: string; note: string; createdAt: string; status: PromiseStatus; borrowerId: string; lenderId?: string; fulfilledAt?: string; kind?: PromiseKind; showUp?: ShowUpDetails };
@@ -103,56 +103,14 @@ function createSession(data: Data, personId: string) {
   return token;
 }
 
-function createLoginHandle(data: Data) {
-  let handle: string;
-  do handle = randomBytes(24).toString("base64url");
-  while (data.people.some((person) => person.loginHandle === handle));
-  return handle;
-}
-
-export async function registerByNullifier(nullifier: string) {
+export async function loginByNullifier(nullifier: string) {
   return change((data) => {
     let person = data.people.find((entry) => entry.worldNullifier === nullifier);
     if (!person) {
-      person = { id: randomUUID(), loginHandle: createLoginHandle(data), worldNullifier: nullifier, createdAt: new Date().toISOString() };
+      person = { id: randomUUID(), worldNullifier: nullifier, createdAt: new Date().toISOString() };
       data.people.push(person);
     }
-    if (!person.loginHandle) person.loginHandle = createLoginHandle(data);
-    return { token: createSession(data, person.id), needsSessionBinding: !person.sessionId };
-  });
-}
-
-export async function bindWorldSession(personId: string, sessionId: string) {
-  return change((data) => {
-    const person = data.people.find((entry) => entry.id === personId);
-    if (!person) return null;
-    const owner = data.people.find((entry) => entry.sessionId === sessionId);
-    if (owner && owner.id !== personId) return null;
-    if (person.sessionId && person.sessionId !== sessionId) return null;
-    person.sessionId = sessionId;
-    if (!person.loginHandle) person.loginHandle = createLoginHandle(data);
-    return person.loginHandle;
-  });
-}
-
-export async function findWorldSession(loginHandle: string) {
-  const person = (await read()).people.find((entry) => entry.loginHandle === loginHandle);
-  return person?.sessionId ?? null;
-}
-
-export async function ensureLoginHandle(personId: string) {
-  return change((data) => {
-    const person = data.people.find((entry) => entry.id === personId);
-    if (!person || !person.sessionId) return null;
-    if (!person.loginHandle) person.loginHandle = createLoginHandle(data);
-    return person.loginHandle;
-  });
-}
-
-export async function loginByBoundSession(sessionId: string) {
-  return change((data) => {
-    const person = data.people.find((entry) => entry.sessionId === sessionId);
-    return person ? createSession(data, person.id) : null;
+    return createSession(data, person.id);
   });
 }
 

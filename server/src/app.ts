@@ -7,8 +7,8 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { RequestHandler } from "express";
 import {
-  bindWorldSession, cancelHandover, consumeChallenge, createChallenge, createPromise, createShowUpPromise, currentPerson, ensureLoginHandle,
-  findWorldSession, getPromise, joinPromise, listPromises, loginByBoundSession, logout, registerByNullifier, transition,
+  cancelHandover, consumeChallenge, createChallenge, createPromise, createShowUpPromise, currentPerson,
+  getPromise, joinPromise, listPromises, loginByNullifier, logout, transition,
 } from "./store.js";
 
 const cookieName = "bfa_session";
@@ -65,13 +65,6 @@ export function createApp(frontend: FrontendOptions = {}) {
     return response.json({ rp_id: rpId, sig: signed.sig, nonce: signed.nonce, created_at: signed.createdAt, expires_at: signed.expiresAt, action });
   }));
 
-  app.post("/api/auth/login-context", asyncRoute(async (request, response) => {
-    const loginHandle = typeof request.body?.loginHandle === "string" ? request.body.loginHandle.trim() : "";
-    if (!/^[A-Za-z0-9_-]{32}$/.test(loginHandle)) return response.status(400).json({ error: "Enter a valid account recovery key" });
-    const sessionId = await findWorldSession(loginHandle);
-    return sessionId ? response.json({ sessionId }) : response.status(404).json({ error: "Account not found" });
-  }));
-
   app.post("/api/verify-proof", asyncRoute(async (request, response) => {
     const proof = request.body?.idkitResponse;
     if (!proof || typeof proof.nonce !== "string") return response.status(400).json({ error: "Invalid proof context" });
@@ -100,38 +93,17 @@ export function createApp(frontend: FrontendOptions = {}) {
     if (!await consumeChallenge(proof.nonce, typeof proof.action === "string" ? proof.action : "")) return response.status(409).json({ error: "Proof request expired or already used" });
 
     const proofAction = typeof proof.action === "string" ? proof.action : "";
-    const sessionId = proof.session_id ?? result.session_id;
-    let token: string | null;
-    let loginHandle: string | undefined;
-    if (typeof sessionId === "string") {
-      const personId = await currentPerson(request.cookies[cookieName]);
-      if (personId) {
-        loginHandle = (await bindWorldSession(personId, sessionId)) ?? undefined;
-        if (!loginHandle) return response.status(409).json({ error: "This World Session cannot be bound to this account" });
-        token = request.cookies[cookieName];
-      } else {
-        token = await loginByBoundSession(sessionId);
-        if (!token) return response.status(401).json({ error: "This World Session is not registered" });
-      }
-    } else {
-      if (proofAction !== registrationAction) return response.status(400).json({ error: "Registration requires the fixed uniqueness action" });
-      const nestedResults = Array.isArray(result.results) ? result.results as Array<Record<string, unknown>> : [];
-      const nullifier = result.nullifier ?? nestedResults.find((entry) => entry.identifier === "proof_of_human" && entry.success === true)?.nullifier;
-      if (typeof nullifier !== "string" || !/^0x[0-9a-fA-F]{64}$/.test(nullifier)) return response.status(400).json({ error: "No verified identity was returned" });
-      const registration = await registerByNullifier(BigInt(nullifier).toString(10));
-      token = registration.token;
-    }
+    if (proofAction !== registrationAction || typeof (proof.session_id ?? result.session_id) === "string") return response.status(400).json({ error: "Sign in requires the fixed World ID identity action" });
+    const nestedResults = Array.isArray(result.results) ? result.results as Array<Record<string, unknown>> : [];
+    const nullifier = result.nullifier ?? nestedResults.find((entry) => entry.identifier === "proof_of_human" && entry.success === true)?.nullifier;
+    if (typeof nullifier !== "string" || !/^0x[0-9a-fA-F]{64}$/.test(nullifier)) return response.status(400).json({ error: "No verified identity was returned" });
+    const token = await loginByNullifier(BigInt(nullifier).toString(10));
 
     response.cookie(cookieName, token, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 30 * 86_400_000 });
-    return response.json({ success: true, ...(loginHandle ? { loginHandle } : {}) });
+    return response.json({ success: true });
   }));
 
-  app.get("/api/session", asyncRoute(async (request, response) => {
-    const personId = await currentPerson(request.cookies[cookieName]);
-    if (!personId) return response.json({ authenticated: false });
-    const loginHandle = await ensureLoginHandle(personId);
-    return response.json({ authenticated: true, ...(loginHandle ? { loginHandle } : {}) });
-  }));
+  app.get("/api/session", asyncRoute(async (request, response) => response.json({ authenticated: Boolean(await currentPerson(request.cookies[cookieName])) })));
 
   if (process.env.NODE_ENV !== "production") {
     app.get("/api/debug/world-id", (_request, response) => response.json({

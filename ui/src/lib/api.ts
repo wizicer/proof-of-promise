@@ -8,8 +8,7 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  session: () => request<{ authenticated: boolean; loginHandle?: string }>("/api/session"),
-  loginContext: (loginHandle: string) => request<{ sessionId: `session_${string}` }>("/api/auth/login-context", { method: "POST", body: JSON.stringify({ loginHandle }) }),
+  session: () => request<{ authenticated: boolean }>("/api/session"),
   logout: () => request<{ success: true }>("/api/session", { method: "DELETE" }),
   promises: () => request<HumanPromise[]>("/api/promises"),
   promise: (id: string) => request<HumanPromise>(`/api/promises/${id}`),

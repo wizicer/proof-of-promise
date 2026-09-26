@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { CredentialRequest, IDKitRequestWidget, IDKitSessionWidget, setDebug, type IDKitDebugReport, type IDKitErrorCodes, type RpContext } from "@worldcoin/idkit";
+import { useCallback, useEffect, useState } from "react";
+import { CredentialRequest, IDKitRequestWidget, setDebug, type IDKitDebugReport, type IDKitErrorCodes, type RpContext } from "@worldcoin/idkit";
 import { Fingerprint, LoaderCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-type Props = { label: string; action?: string; existingSessionId?: `session_${string}`; presence?: boolean; onVerified: (result: { loginHandle?: string }) => Promise<void> | void };
+type Props = { label: string; action: string; presence?: boolean; onVerified: () => Promise<void> | void };
 type DiagnosticError = { message: string; code?: string; requestId?: string };
 
 if (import.meta.env.DEV) setDebug(true);
@@ -13,11 +13,10 @@ function safeDebugReport(report?: IDKitDebugReport) {
   return { requestId: report.request_id, transport: report.transport, sdkVersion: report.package_version, generatedAt: report.generated_at };
 }
 
-export function WorldIdButton({ label, action, existingSessionId, presence = false, onVerified }: Props) {
+export function WorldIdButton({ label, action, presence = false, onVerified }: Props) {
   const [open, setOpen] = useState(false);
   const [context, setContext] = useState<RpContext | null>(null);
   const [error, setError] = useState<DiagnosticError | null>(null);
-  const verifiedResult = useRef<{ loginHandle?: string }>({});
 
   const prepare = useCallback(async () => {
     try {
@@ -34,7 +33,7 @@ export function WorldIdButton({ label, action, existingSessionId, presence = fal
     }
   }, [action]);
 
-  useEffect(() => { void prepare(); }, [prepare, existingSessionId]);
+  useEffect(() => { void prepare(); }, [prepare]);
 
   const shared = {
     open,
@@ -54,13 +53,12 @@ export function WorldIdButton({ label, action, existingSessionId, presence = fal
           console.error("[World ID] Host verification failed", { status: response.status, requestId });
           throw new Error(body.error ?? "World ID rejected");
         }
-        verifiedResult.current = body;
       } catch (reason) {
         if (reason instanceof TypeError) setError({ message: "Could not reach the verification server", code: "network_error" });
         throw reason;
       }
     },
-    onSuccess: async () => { setOpen(false); await onVerified(verifiedResult.current); },
+    onSuccess: async () => { setOpen(false); await onVerified(); },
     onError: (code: IDKitErrorCodes, debugReport?: IDKitDebugReport) => {
       const report = safeDebugReport(debugReport);
       console.error("[World ID] Verification flow failed", { code, ...report });
@@ -75,9 +73,7 @@ export function WorldIdButton({ label, action, existingSessionId, presence = fal
         {context ? label : "Preparing secure sign in…"}
       </Button>
       {error && <div role="alert" className="rounded-xl border border-destructive/25 bg-destructive/5 px-3 py-2 text-center text-sm text-destructive"><p>{error.message}</p>{(error.code || error.requestId) && <p className="mt-1 font-mono text-[.65rem] opacity-75">{error.code && `code: ${error.code}`}{error.code && error.requestId && " · "}{error.requestId && `diagnostic: ${error.requestId}`}</p>}</div>}
-      {context && (action
-        ? <IDKitRequestWidget {...shared} action={action} allow_legacy_proofs={false} />
-        : <IDKitSessionWidget {...shared} existing_session_id={existingSessionId} />)}
+      {context && <IDKitRequestWidget {...shared} action={action} allow_legacy_proofs={false} />}
     </div>
   );
 }
