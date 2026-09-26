@@ -46,7 +46,6 @@ authRouter.post("/api/verify-proof", asyncRoute(async (request, response) => {
   if (!worldResponse.ok || result.success !== true || result.environment !== expectedEnvironment) {
     return response.status(400).json({ error: result.error ?? result.detail ?? "World ID verification failed" });
   }
-  if (request.body?.requireUserPresence === true && proof.user_presence_completed !== true) return response.status(400).json({ error: "Live check incomplete" });
   if (!await consumeChallenge(proof.nonce, typeof proof.action === "string" ? proof.action : "")) return response.status(409).json({ error: "Proof request expired or already used" });
 
   const sessionId = proof.session_id ?? result.session_id;

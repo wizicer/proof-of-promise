@@ -3,13 +3,11 @@ import { Link } from "react-router-dom";
 import { ArrowRight, ChevronDown, Fingerprint, LogOut, Moon, ShieldCheck, Sparkles, Store, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Switch } from "@/components/ui/switch";
 import { Shell } from "@/layouts/Shell";
 import { useTheme } from "@/components/theme-provider";
 import { StoryModal } from "@/components/StoryModal";
 
 export function PersonalPage({ onLogout }: { onLogout: () => Promise<void> }) {
-  const [presence, setPresence] = useState(localStorage.getItem("bfa-presence") === "true");
   const [storyOpen, setStoryOpen] = useState(false);
   const { theme, setTheme } = useTheme();
 
@@ -61,20 +59,6 @@ export function PersonalPage({ onLogout }: { onLogout: () => Promise<void> }) {
           </div>
           <ArrowRight className="size-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
         </Link>
-
-        <div className="setting-row">
-          <div>
-            <strong>Fresh presence check</strong>
-            <p>Ask World ID to confirm you are present</p>
-          </div>
-          <Switch 
-            checked={presence} 
-            onCheckedChange={(value) => { 
-              setPresence(value); 
-              localStorage.setItem("bfa-presence", String(value)); 
-            }} 
-          />
-        </div>
 
         <div className="setting-row">
           <div>
