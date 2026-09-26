@@ -1,18 +1,32 @@
 import path from "node:path";
+import { createReadStream } from "node:fs";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 
 const publicPort = Number(process.env.PORT ?? 3000);
 const internalPort = Number(process.env.VITE_INTERNAL_PORT ?? 5173);
+const idkitWasmPath = path.resolve(__dirname, "node_modules/@worldcoin/idkit-core/dist/idkit_wasm_bg.wasm");
+
+function serveIdkitWasm(): Plugin {
+  return {
+    name: "serve-idkit-wasm",
+    configureServer(server) {
+      server.middlewares.use((request, response, next) => {
+        if (request.url?.split("?", 1)[0] !== "/node_modules/.vite/deps/idkit_wasm_bg.wasm") return next();
+        response.statusCode = 200;
+        response.setHeader("Content-Type", "application/wasm");
+        response.setHeader("Cache-Control", "no-cache");
+        createReadStream(idkitWasmPath).pipe(response);
+      });
+    },
+  };
+}
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [serveIdkitWasm(), react(), tailwindcss()],
   envDir: path.resolve(__dirname, ".."),
   resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
-  // IDKit resolves its WASM binary relative to import.meta.url. Vite's dependency
-  // pre-bundler relocates the JS into .vite/deps without copying that sibling WASM.
-  optimizeDeps: { exclude: ["@worldcoin/idkit", "@worldcoin/idkit-core"] },
   server: {
     host: "127.0.0.1",
     port: internalPort,
