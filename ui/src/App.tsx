@@ -99,11 +99,13 @@ function PromiseHome() {
       <article className="promise-type-card promise-type-return">
         <div className="promise-type-art"><img src="/promise-assets/illustrations/borrow-return.png" alt="Two people passing a book" /></div>
         <h2>Promise to Return</h2>
+        <p>Borrow an item and promise to return it on time.</p>
         <button type="button" onClick={() => setOpen(true)}>Start <ArrowRight /></button>
       </article>
       <article className="promise-type-card promise-type-show-up">
         <div className="promise-type-art"><img src="/promise-assets/illustrations/reservation-calendar.png" alt="Calendar with a check mark" /></div>
         <h2>Promise to Show Up</h2>
+        <p>Book a place or time and promise to be there.</p>
         <button type="button" disabled>Coming soon</button>
       </article>
     </section> :
