@@ -2,7 +2,7 @@
 
 A mobile-first Proof of Promise app for borrowing an item from another verified human.
 
-The active project is intentionally split into two independent applications:
+The repository is an npm workspaces monorepo with two applications:
 
 - `ui/` — React 19, Vite, Tailwind CSS, Shadcn UI, and World ID IDKit
 - `server/` — Node.js, Express, TypeScript, and atomic JSON persistence
@@ -14,12 +14,12 @@ Copy `.env.example` to the repository-root `.env.local`. Both Vite and Express l
 
 ```bash
 npm install
-npm --prefix server install
-npm --prefix ui install
 npm run dev
 ```
 
-The root `dev` command starts Express and Vite together. Open `http://localhost:3000`: Express is the only externally reachable entry point and transparently proxies pages and HMR to Vite's loopback-only listener. To run only one side, use `npm run dev:server` or `npm run dev:ui`.
+Dependencies and their lock state are managed once from the repository root. Do not run `npm install` inside an individual workspace or commit workspace-local lockfiles.
+
+The root `dev` command starts Express and Vite together. Open `http://localhost:3000`: Express is the only externally reachable entry point and transparently proxies pages and HMR to Vite's loopback-only listener. To run only one side, use `npm run dev:server` or `npm run dev:ui`. You can also target a workspace directly, for example `npm run lint --workspace=ui`.
 
 For a production-equivalent single-port build:
 
@@ -39,4 +39,4 @@ In production, Express serves both `/api/*` and the compiled React application f
 5. The borrower hands the item back and requests return confirmation.
 6. The lender inspects the item and completes the promise.
 
-Run `npm run build` in both application directories and `npm test` in `server/` before release.
+Run `npm run build` and `npm test` from the repository root before release.
