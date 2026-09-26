@@ -318,8 +318,8 @@ export function StoryModal({ open, onClose }: StoryModalProps) {
         </div>
 
         {/* Bottom Control Bar */}
-        <div className="flex h-24 shrink-0 items-center justify-between px-6 pb-safe">
-          {currentSlide > 0 ? (
+        <div className="flex h-24 shrink-0 items-center gap-4 px-6 pb-safe">
+          {currentSlide > 0 && (
             <button
               type="button"
               onClick={prevSlide}
@@ -328,15 +328,13 @@ export function StoryModal({ open, onClose }: StoryModalProps) {
             >
               <ChevronLeft className="size-5" />
             </button>
-          ) : (
-            <div className="size-11" />
           )}
 
           {currentSlide === totalSlides - 1 ? (
             <Button
               size="lg"
               onClick={handleFinish}
-              className="h-12 flex-1 ml-4 rounded-2xl font-extrabold shadow-lg shadow-primary/20 text-base"
+              className="h-12 flex-1 rounded-2xl font-extrabold shadow-lg shadow-primary/20 text-base"
             >
               <span>Start</span>
               <ArrowRight className="size-5 ml-1" />
@@ -345,7 +343,7 @@ export function StoryModal({ open, onClose }: StoryModalProps) {
             <Button
               size="lg"
               onClick={nextSlide}
-              className="h-12 flex-1 ml-4 rounded-2xl font-bold text-sm bg-white text-black hover:bg-white/90"
+              className="h-12 flex-1 rounded-2xl font-bold text-sm bg-white text-black hover:bg-white/90"
             >
               <span>Next</span>
               <ChevronRight className="size-4 ml-1" />
