@@ -40,7 +40,7 @@ export function PersonalPage({ onLogout }: { onLogout: () => Promise<void> }) {
               <Sparkles className="size-5" />
             </span>
             <div>
-              <strong>Why Promise?</strong>
+              <strong>Why Proof of Promise?</strong>
               <p>The story and philosophy behind trust</p>
             </div>
           </div>

@@ -310,7 +310,7 @@ export function StoryModal({ open, onClose }: StoryModalProps) {
                 </div>
 
                 <h2 className="text-2xl sm:text-3xl font-black leading-tight tracking-tight">
-                  That’s why we built Promise.
+                  That’s why we built Proof of Promise.
                 </h2>
               </div>
             </div>
