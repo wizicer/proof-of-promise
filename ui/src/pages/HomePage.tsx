@@ -47,19 +47,19 @@ export function HomePage() {
     {promises === null ? <div className="activity-notice promise-home-notice muted"><LoaderCircle className="animate-spin" /><span>Checking your promises…</span></div> : active.length > 0 && <Link to="/activity" className="activity-notice promise-home-notice"><span className="notice-icon"><BellRing /></span><span><strong>{active.length} {active.length === 1 ? "promise" : "promises"} in motion</strong></span><ArrowRight className="ml-auto" /></Link>}
     {!open ? <section className="promise-type-grid" aria-label="Promise types">
       <article className="promise-type-card promise-type-return">
-        <div className="promise-type-art"><img src="/promise-assets/illustrations/borrow-return.png" alt="Two people passing a book" /></div>
+        <div className="promise-type-art"><img src="/promise-assets/illustrations/borrow-return.webp" alt="Two people passing a book" /></div>
         <h2>Promise to Return</h2>
         <p>Borrow an item and promise to return it on time.</p>
         <button type="button" onClick={() => setOpen(true)}>Start <ArrowRight /></button>
       </article>
       <article className="promise-type-card promise-type-show-up">
-        <div className="promise-type-art"><img src="/promise-assets/illustrations/reservation-calendar.png" alt="Calendar with a check mark" /></div>
+        <div className="promise-type-art"><img src="/promise-assets/illustrations/reservation-calendar.webp" alt="Calendar with a check mark" /></div>
         <h2>Promise to Show Up</h2>
         <p>Book a place or time and promise to be there.</p>
         <button type="button" onClick={() => navigate("/show-up")}>Start <ArrowRight /></button>
       </article>
       <article className="promise-type-card promise-type-scan">
-        <div className="promise-type-art"><img src="/promise-assets/illustrations/scan-promise.png" alt="Person scanning merchant QR code" /></div>
+        <div className="promise-type-art"><img src="/promise-assets/illustrations/scan-promise.webp" alt="Person scanning merchant QR code" /></div>
         <h2>Scan to Promise</h2>
         <p>Scan a merchant QR code to borrow items instantly.</p>
         <button type="button" onClick={() => setScanOpen(true)}>Scan QR <ArrowRight /></button>
