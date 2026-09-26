@@ -19,9 +19,16 @@ npm --prefix ui install
 npm run dev
 ```
 
-The root `dev` command starts Express and Vite together. To run only one side, use `npm run dev:server` or `npm run dev:ui`.
+The root `dev` command starts Express and Vite together. Open `http://localhost:3000`: Express is the only externally reachable entry point and transparently proxies pages and HMR to Vite's loopback-only listener. To run only one side, use `npm run dev:server` or `npm run dev:ui`.
 
-Open `http://localhost:5173`. Vite proxies `/api` to Express at `http://localhost:3001`.
+For a production-equivalent single-port build:
+
+```bash
+npm run build
+npm start
+```
+
+In production, Express serves both `/api/*` and the compiled React application from `ui/dist` on `http://localhost:3000`; Vite does not run.
 
 ## Promise flow
 

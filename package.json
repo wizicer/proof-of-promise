@@ -5,7 +5,12 @@
   "scripts": {
     "dev": "concurrently --kill-others-on-fail --names server,ui --prefix-colors blue,green \"npm run dev:server\" \"npm run dev:ui\"",
     "dev:server": "npm --prefix server run dev",
-    "dev:ui": "npm --prefix ui run dev"
+    "dev:ui": "npm --prefix ui run dev",
+    "build": "npm run build:ui && npm run build:server",
+    "build:ui": "npm --prefix ui run build",
+    "build:server": "npm --prefix server run build",
+    "start": "npm --prefix server start",
+    "test": "npm --prefix ui run lint && npm --prefix server test"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
