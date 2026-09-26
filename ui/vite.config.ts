@@ -10,6 +10,9 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   envDir: path.resolve(__dirname, ".."),
   resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
+  // IDKit resolves its WASM binary relative to import.meta.url. Vite's dependency
+  // pre-bundler relocates the JS into .vite/deps without copying that sibling WASM.
+  optimizeDeps: { exclude: ["@worldcoin/idkit", "@worldcoin/idkit-core"] },
   server: {
     host: "127.0.0.1",
     port: internalPort,
