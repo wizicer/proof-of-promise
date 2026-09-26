@@ -46,38 +46,36 @@
 .bottom-nav { @apply fixed inset-x-3 bottom-3 z-30 mx-auto grid max-w-md grid-cols-3 rounded-[1.4rem] border border-border/80 bg-card/90 p-1.5 shadow-xl shadow-foreground/10 backdrop-blur-xl; padding-bottom: max(.375rem, env(safe-area-inset-bottom)); }.bottom-nav a { @apply flex flex-col items-center gap-1 rounded-2xl px-3 py-2 text-[.68rem] font-bold text-muted-foreground transition; }.bottom-nav svg { @apply size-5; }.bottom-nav a.active { @apply bg-primary text-primary-foreground; }
 .page-heading h1 { @apply mt-3 max-w-2xl text-4xl font-black leading-[.98] tracking-[-.055em] sm:text-6xl; }.page-heading>p:last-child { @apply mt-4 max-w-md text-sm leading-6 text-muted-foreground sm:text-base; }
 .form-card { @apply mt-8 grid max-w-xl gap-5 rounded-[1.75rem] border bg-card p-5 shadow-sm sm:p-7; }.form-card h2 { @apply mt-1 text-2xl font-black tracking-tight; }.form-card input,.form-card textarea { @apply rounded-xl bg-background; }
-.promise-home { @apply relative isolate mx-auto max-w-4xl overflow-hidden rounded-[2rem] px-1 pb-14 sm:px-6 sm:pb-16; }
+.promise-home { @apply relative isolate mx-auto max-w-4xl overflow-hidden rounded-[2rem] px-1 pb-4 sm:px-6 sm:pb-8; }
 .promise-home-wave { @apply pointer-events-none absolute left-0 -z-10 w-full opacity-80; }
 .promise-home-wave-top { @apply top-0 h-36 object-cover object-bottom; }
 .promise-home-wave-bottom { @apply bottom-0 h-24 object-cover object-top; }
-.promise-picker-heading { @apply relative mb-7 pt-12 sm:mb-9 sm:pt-16; }
-.promise-picker-heading h1 { color: #0c1739; @apply mt-2 text-[2.65rem] font-black leading-none tracking-[-.055em] sm:text-6xl; }
-.promise-picker-heading>p:last-child { color: #78849c; @apply mt-3 max-w-md text-base leading-6 sm:text-lg; }
-.promise-heading-leaves { @apply absolute right-1 top-5 h-20 w-16 object-contain sm:right-8 sm:top-7; }
-.promise-heading-spark { @apply absolute right-14 top-2 h-8 w-8 object-contain sm:right-24 sm:top-5; }
-.promise-type-grid { @apply grid gap-5 md:grid-cols-2; }
-.promise-type-card { @apply relative flex min-h-[25rem] flex-col overflow-hidden rounded-[1.75rem] p-5 shadow-[0_10px_25px_rgba(23,44,62,.08)] sm:p-6; }
+.promise-picker-heading { @apply relative mb-3 pt-2 sm:mb-4 sm:pt-5; }
+.promise-picker-heading h1 { color: #0c1739; @apply text-[2.35rem] font-black leading-none tracking-[-.055em] sm:text-5xl; }
+.promise-heading-leaves { @apply absolute right-1 -top-2 h-14 w-11 object-contain sm:right-8 sm:top-0; }
+.promise-heading-spark { @apply absolute right-11 -top-3 h-6 w-6 object-contain sm:right-20 sm:-top-1; }
+.promise-type-grid { @apply mt-3 grid gap-3 md:grid-cols-2; }
+.promise-type-card { @apply relative flex min-h-[12.75rem] flex-col overflow-hidden rounded-[1.5rem] p-4 shadow-[0_7px_18px_rgba(23,44,62,.07)] sm:min-h-64 sm:p-5; }
 .promise-type-return { background: #f0fbf6; }
 .promise-type-show-up { background: #fff7eb; }
-.promise-type-art { @apply relative mb-3 flex h-32 items-center; }
-.promise-type-art>img:first-child { @apply h-full w-48 object-contain object-left; }
-.promise-type-show-up .promise-type-art>img:first-child { @apply w-32; }
-.promise-type-spark { @apply absolute left-44 top-6 h-9 w-9; }
-.promise-type-card h2 { color: #0c1739; @apply text-[1.75rem] font-black leading-tight tracking-[-.04em]; }
-.promise-type-card>p { color: #78849c; @apply mt-2 text-base leading-6; }
-.promise-type-card>button { @apply mt-auto flex h-14 w-full items-center justify-center gap-3 rounded-full text-base font-extrabold text-white shadow-md transition focus-visible:outline-3 focus-visible:outline-offset-3; }
+.promise-type-art { @apply mb-1 flex h-[4.75rem] items-center; }
+.promise-type-art>img:first-child { @apply h-full w-32 object-contain object-left; }
+.promise-type-show-up .promise-type-art>img:first-child { @apply w-20; }
+.promise-type-card h2 { color: #0c1739; @apply text-[1.35rem] font-black leading-tight tracking-[-.04em]; }
+.promise-type-card>button { @apply mt-auto flex h-10 w-full items-center justify-center gap-2 rounded-full text-sm font-extrabold text-white shadow-sm transition focus-visible:outline-3 focus-visible:outline-offset-3; }
 .promise-type-card>button svg { @apply size-5 transition-transform; }
 .promise-type-card>button:not(:disabled):hover { @apply -translate-y-0.5 shadow-lg; }
 .promise-type-card>button:not(:disabled):hover svg { @apply translate-x-1; }
 .promise-type-return>button { background: #37a983; outline-color: #0c1739; }
 .promise-type-show-up>button { background: #f39a43; outline-color: #0c1739; }
 .promise-type-card>button:disabled { @apply cursor-not-allowed opacity-45 shadow-none; }
-.coming-soon { color: #bd681c; background: #fff0d9; @apply absolute right-5 top-5 rounded-full px-3 py-1 text-[.65rem] font-extrabold uppercase tracking-wider; }
+.coming-soon { color: #bd681c; background: #fff0d9; @apply absolute right-4 top-4 rounded-full px-2.5 py-1 text-[.58rem] font-extrabold uppercase tracking-wider; }
 .promise-form { @apply mx-auto mt-0 border-0 shadow-[0_10px_30px_rgba(23,44,62,.1)]; }
 .dark .promise-picker-heading h1,.dark .promise-type-card h2 { color: #0c1739; }
 .dark .promise-home-wave { @apply opacity-20; }
 .section-title { @apply mb-4 flex items-center gap-2; }.section-title h2 { @apply text-xl font-black tracking-tight; }.section-title span { @apply grid size-6 place-items-center rounded-full bg-secondary text-xs font-bold; }.card-grid { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-3; }
 .activity-notice { @apply flex max-w-xl items-center gap-3 rounded-2xl border border-primary/40 bg-primary/15 p-3.5 text-sm transition hover:border-primary hover:bg-primary/25; }.activity-notice .notice-icon { @apply grid size-10 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground; }.activity-notice svg { @apply size-5; }.activity-notice strong,.activity-notice small { @apply block; }.activity-notice strong { @apply font-extrabold; }.activity-notice small { @apply mt-0.5 text-xs text-muted-foreground; }.activity-notice.muted { @apply border-border bg-card text-muted-foreground; }
+.promise-home-notice { @apply min-h-11 max-w-none rounded-xl px-3 py-2; }.promise-home-notice .notice-icon { @apply size-7 rounded-lg; }.promise-home-notice .notice-icon svg,.promise-home-notice>svg { @apply size-4; }
 .promise-card { @apply block rounded-[1.5rem] border bg-card p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md; }.promise-card h3 { @apply mt-5 text-2xl font-black tracking-tight; }.promise-card>p { @apply mt-1 text-sm text-muted-foreground; }.role-tag { @apply rounded-full bg-secondary px-2.5 py-1 text-[.68rem] font-bold uppercase tracking-wide text-secondary-foreground; }
 .status-dot { @apply grid size-9 place-items-center rounded-full bg-secondary; }.status-dot span { @apply size-2.5 rounded-full bg-muted-foreground; }.status-active span,.status-return_requested span { @apply bg-primary; }.status-fulfilled span { @apply bg-success; }.status-handover_pending span { @apply bg-orange-400; }
 .empty-state { @apply grid justify-items-center rounded-[1.75rem] border border-dashed bg-card/40 px-6 py-14 text-center; }.empty-state>span { @apply grid size-12 place-items-center rounded-2xl bg-secondary text-muted-foreground; }.empty-state h3 { @apply mt-4 font-bold; }.empty-state p { @apply mt-1 max-w-xs text-sm leading-6 text-muted-foreground; }

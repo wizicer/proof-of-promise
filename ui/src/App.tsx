@@ -94,27 +94,23 @@ function PromiseHome() {
     <section className="promise-picker-heading">
       <img className="promise-heading-spark" src="/promise-assets/decorations/orange-spark.svg" alt="" />
       <img className="promise-heading-leaves" src="/promise-assets/decorations/header-leaves.svg" alt="" />
-      <p className="eyebrow text-muted-foreground">Your word, made visible</p>
-      <h1>Make a Promise</h1>
-      <p>Choose what kind of promise you want to make.</p>
+      <h1>Make Promise</h1>
     </section>
+    {promises === null ? <div className="activity-notice promise-home-notice muted"><LoaderCircle className="animate-spin" /><span>Checking your promises…</span></div> : active.length > 0 && <Link to="/activity" className="activity-notice promise-home-notice"><span className="notice-icon"><BellRing /></span><span><strong>{active.length} {active.length === 1 ? "promise" : "promises"} in motion</strong></span><ArrowRight className="ml-auto" /></Link>}
     {!open ? <section className="promise-type-grid" aria-label="Promise types">
       <article className="promise-type-card promise-type-return">
-        <div className="promise-type-art"><img src="/promise-assets/illustrations/borrow-return.png" alt="Two people passing a book" /><img className="promise-type-spark" src="/promise-assets/decorations/green-spark.svg" alt="" /></div>
+        <div className="promise-type-art"><img src="/promise-assets/illustrations/borrow-return.png" alt="Two people passing a book" /></div>
         <h2>Promise to Return</h2>
-        <p>Borrow an item and promise to return it on time.</p>
-        <button type="button" onClick={() => setOpen(true)}>Start this promise <ArrowRight /></button>
+        <button type="button" onClick={() => setOpen(true)}>Start <ArrowRight /></button>
       </article>
       <article className="promise-type-card promise-type-show-up">
         <div className="promise-type-art"><img src="/promise-assets/illustrations/reservation-calendar.png" alt="Calendar with a check mark" /></div>
         <span className="coming-soon">Coming soon</span>
         <h2>Promise to Show Up</h2>
-        <p>Book a place or time and promise to be there.</p>
         <button type="button" disabled>Coming soon</button>
       </article>
     </section> :
       <form onSubmit={submit} className="form-card promise-form"><div className="flex items-center justify-between"><div><p className="eyebrow text-muted-foreground">Promise to Return</p><h2>What will you return?</h2></div><Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>Back</Button></div><div className="grid gap-2"><Label htmlFor="item">Item</Label><Input id="item" autoFocus maxLength={80} required placeholder="e.g. a portable charger" value={item} onChange={(e) => setItem(e.target.value)} /></div><div className="grid gap-2"><Label htmlFor="deadline">Promise to return it by</Label><Input id="deadline" type="datetime-local" required value={deadline} onChange={(e) => setDeadline(e.target.value)} /></div><div className="grid gap-2"><div className="flex justify-between"><Label htmlFor="note">A note <span className="font-normal text-muted-foreground">(optional)</span></Label><span className="text-xs text-muted-foreground">{note.length}/240</span></div><Textarea id="note" maxLength={240} placeholder="Condition, meeting point, or anything useful…" value={note} onChange={(e) => setNote(e.target.value)} /></div>{error && <p role="alert" className="text-sm text-destructive">{error}</p>}<Button size="lg" disabled={busy} className="h-14 rounded-2xl">{busy && <LoaderCircle className="animate-spin" />}Make this promise <ArrowRight /></Button></form>}
-    {promises === null ? <div className="activity-notice muted mt-8"><LoaderCircle className="animate-spin" /><span>Checking your activity…</span></div> : active.length > 0 && <Link to="/activity" className="activity-notice mt-8"><span className="notice-icon"><BellRing /></span><span><strong>{active.length} {active.length === 1 ? "promise" : "promises"} in motion</strong><small>See what needs attention</small></span><ArrowRight className="ml-auto" /></Link>}
     <img className="promise-home-wave promise-home-wave-bottom" src="/promise-assets/decorations/bottom-wave.svg" alt="" />
   </div></Shell>;
 }
