@@ -2,6 +2,7 @@ import { signRequest } from "@worldcoin/idkit-core/signing";
 import cookieParser from "cookie-parser";
 import express, { type Request, type Response } from "express";
 import { existsSync } from "node:fs";
+import { randomUUID } from "node:crypto";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { RequestHandler } from "express";
@@ -26,6 +27,24 @@ type FrontendOptions =
 export function createApp(frontend: FrontendOptions = {}) {
   const app = express();
   app.disable("x-powered-by");
+  app.use((request, response, next) => {
+    const incoming = request.get("x-request-id");
+    const requestId = incoming && /^[a-zA-Z0-9_-]{8,80}$/.test(incoming) ? incoming : randomUUID();
+    response.locals.requestId = requestId;
+    response.setHeader("x-request-id", requestId);
+    if (request.path.startsWith("/api/")) {
+      const started = performance.now();
+      response.on("finish", () => console.info(JSON.stringify({
+        scope: "api",
+        requestId,
+        method: request.method,
+        path: request.path,
+        status: response.statusCode,
+        durationMs: Math.round(performance.now() - started),
+      })));
+    }
+    next();
+  });
   app.use(express.json({ limit: "32kb" }));
   app.use(cookieParser());
 
@@ -38,6 +57,7 @@ export function createApp(frontend: FrontendOptions = {}) {
     const action = typeof request.body?.action === "string" && request.body.action ? request.body.action : undefined;
     const signed = signRequest(action ? { signingKeyHex, action } : { signingKeyHex });
     await createChallenge(signed.nonce, action ?? "", signed.expiresAt);
+    console.info(JSON.stringify({ scope: "world-id", requestId: response.locals.requestId, stage: "challenge_created", environment: process.env.WORLD_ENV ?? "staging" }));
     return response.json({ rp_id: rpId, sig: signed.sig, nonce: signed.nonce, created_at: signed.createdAt, expires_at: signed.expiresAt, action });
   }));
 
@@ -47,13 +67,21 @@ export function createApp(frontend: FrontendOptions = {}) {
     const rpId = process.env.WORLD_RP_ID;
     if (!rpId) return response.status(500).json({ error: "World ID configuration is missing" });
 
-    const worldResponse = await fetch(`https://developer.world.org/api/v4/verify/${rpId}`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(proof),
-    });
+    console.info(JSON.stringify({ scope: "world-id", requestId: response.locals.requestId, stage: "proof_received" }));
+    let worldResponse: globalThis.Response;
+    try {
+      worldResponse = await fetch(`https://developer.world.org/api/v4/verify/${rpId}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(proof),
+      });
+    } catch (error) {
+      console.error(JSON.stringify({ scope: "world-id", requestId: response.locals.requestId, stage: "upstream_unreachable", error: error instanceof Error ? error.name : "UnknownError" }));
+      return response.status(502).json({ error: "Could not reach World ID verification service" });
+    }
     const result = await worldResponse.json().catch(() => ({})) as Record<string, unknown>;
     const expectedEnvironment = process.env.WORLD_ENV ?? "staging";
+    console.info(JSON.stringify({ scope: "world-id", requestId: response.locals.requestId, stage: "upstream_response", status: worldResponse.status, success: result.success === true, code: typeof result.error === "string" ? result.error : undefined }));
     if (!worldResponse.ok || result.success !== true || result.environment !== expectedEnvironment) {
       return response.status(400).json({ error: result.error ?? result.detail ?? "World ID verification failed" });
     }
@@ -76,6 +104,18 @@ export function createApp(frontend: FrontendOptions = {}) {
   }));
 
   app.get("/api/session", asyncRoute(async (request, response) => response.json({ authenticated: Boolean(await currentPerson(request.cookies[cookieName])) })));
+
+  if (process.env.NODE_ENV !== "production") {
+    app.get("/api/debug/world-id", (_request, response) => response.json({
+      appIdConfigured: Boolean(process.env.VITE_WORLD_APP_ID),
+      appIdSuffix: process.env.VITE_WORLD_APP_ID?.slice(-4),
+      rpIdConfigured: Boolean(process.env.WORLD_RP_ID),
+      rpIdSuffix: process.env.WORLD_RP_ID?.slice(-4),
+      signingKeyConfigured: Boolean(process.env.WORLD_RP_SIGNING_KEY),
+      clientEnvironment: process.env.VITE_WORLD_ENV ?? null,
+      serverEnvironment: process.env.WORLD_ENV ?? null,
+    }));
+  }
   app.delete("/api/session", asyncRoute(async (request, response) => {
     await logout(request.cookies[cookieName]);
     response.clearCookie(cookieName, { path: "/" });
@@ -137,8 +177,8 @@ export function createApp(frontend: FrontendOptions = {}) {
   }
 
   app.use((error: unknown, _request: Request, response: Response, _next: (error?: unknown) => void) => {
-    console.error(error);
-    response.status(500).json({ error: "Unexpected server error" });
+    console.error(JSON.stringify({ scope: "api", requestId: response.locals.requestId, stage: "unhandled_error", error: error instanceof Error ? error.message : String(error) }));
+    response.status(500).json({ error: "Unexpected server error", requestId: response.locals.requestId });
   });
   return app;
 }

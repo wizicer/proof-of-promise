@@ -19,7 +19,13 @@ after(() => new Promise<void>((resolve, reject) => server.close((error) => error
 test("health endpoint is available", async () => {
   const response = await fetch(`${origin}/api/health`);
   assert.equal(response.status, 200);
+  assert.match(response.headers.get("x-request-id") ?? "", /^[0-9a-f-]{36}$/);
   assert.deepEqual(await response.json(), { ok: true });
+});
+
+test("preserves a safe caller request id for log correlation", async () => {
+  const response = await fetch(`${origin}/api/health`, { headers: { "x-request-id": "browser_debug_1234" } });
+  assert.equal(response.headers.get("x-request-id"), "browser_debug_1234");
 });
 
 test("private promise list requires a session", async () => {
