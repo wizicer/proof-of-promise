@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, NavLink, Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
-import { Activity as ActivityIcon, ArrowLeft, ArrowRight, BellRing, Check, ChevronDown, Clock3, Copy, Fingerprint, HandHeart, Home, LoaderCircle, LogOut, Moon, PackageCheck, ScanLine, ShieldCheck, Sun, UserRound } from "lucide-react";
+import { Activity as ActivityIcon, ArrowLeft, ArrowRight, BatteryCharging, BellRing, BookOpen, Cable, Check, ChevronDown, Clock3, Copy, Fingerprint, HandHeart, Headphones, Home, LoaderCircle, LogOut, Moon, PackageCheck, PackageOpen, PlugZap, ScanLine, ShieldCheck, Sun, Umbrella, Unplug, UserRound, Wrench, type LucideIcon } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -21,8 +21,35 @@ const statusCopy: Record<PromiseStatus, { label: string; hint: string }> = {
   FULFILLED: { label: "Promise kept", hint: "Returned and confirmed" },
 };
 
+const itemOptions: { label: string; icon: LucideIcon }[] = [
+  { label: "Power bank", icon: BatteryCharging },
+  { label: "Charger", icon: PlugZap },
+  { label: "Charging cable", icon: Cable },
+  { label: "Adapter", icon: Unplug },
+  { label: "Umbrella", icon: Umbrella },
+  { label: "Book", icon: BookOpen },
+  { label: "Tools", icon: Wrench },
+  { label: "Headphones", icon: Headphones },
+];
+
+const returnOptions = [
+  { id: "2h", label: "2 hours", milliseconds: 2 * 60 * 60 * 1_000 },
+  { id: "1d", label: "1 day", milliseconds: 24 * 60 * 60 * 1_000 },
+  { id: "2d", label: "2 days", milliseconds: 2 * 24 * 60 * 60 * 1_000 },
+  { id: "1w", label: "1 week", milliseconds: 7 * 24 * 60 * 60 * 1_000 },
+] as const;
+
 function time(value: string) {
   return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(value));
+}
+
+function relativeTime(value: string) {
+  const difference = new Date(value).getTime() - Date.now();
+  const absolute = Math.abs(difference);
+  const formatter = new Intl.RelativeTimeFormat(undefined, { numeric: "always" });
+  if (absolute < 90 * 60 * 1_000) return formatter.format(Math.round(difference / 60_000), "minute");
+  if (absolute < 36 * 60 * 60 * 1_000) return formatter.format(Math.round(difference / 3_600_000), "hour");
+  return formatter.format(Math.round(difference / 86_400_000), "day");
 }
 
 function Login({ onVerified }: { onVerified: () => Promise<void> }) {
@@ -68,15 +95,18 @@ function Empty({ title, copy }: { title: string; copy: string }) {
 
 function PromiseCard({ promise }: { promise: HumanPromise }) {
   const state = statusCopy[promise.status];
-  return <Link to={`/p/${promise.id}`} className="promise-card group"><div className="flex items-start justify-between gap-4"><span className={`status-dot status-${promise.status.toLowerCase()}`}><span /></span><span className="role-tag">{promise.myRole === "borrower" ? "Borrowing" : "Lending"}</span></div><h3>{promise.item}</h3><p>{state.label}</p><div className="mt-5 flex items-center justify-between border-t border-border/70 pt-4 text-sm text-muted-foreground"><span className="flex items-center gap-2"><Clock3 className="size-4" />Due {time(promise.deadline)}</span><ArrowRight className="size-4 transition-transform group-hover:translate-x-1" /></div></Link>;
+  const deadline = promise.myRole === "borrower" ? time(promise.deadline) : relativeTime(promise.deadline);
+  return <Link to={`/p/${promise.id}`} className="promise-card group"><div className="flex items-start justify-between gap-4"><span className={`status-dot status-${promise.status.toLowerCase()}`}><span /></span><span className="role-tag">{promise.myRole === "borrower" ? "Borrowing" : "Lending"}</span></div><h3>{promise.item}</h3><p>{state.label}</p><div className="mt-5 flex items-center justify-between border-t border-border/70 pt-4 text-sm text-muted-foreground"><span className="flex items-center gap-2"><Clock3 className="size-4" />Due {deadline}</span><ArrowRight className="size-4 transition-transform group-hover:translate-x-1" /></div></Link>;
 }
 
 function PromiseHome() {
   const navigate = useNavigate();
   const [promises, setPromises] = useState<HumanPromise[] | null>(null);
   const [open, setOpen] = useState(false);
-  const [item, setItem] = useState("");
-  const [deadline, setDeadline] = useState("");
+  const [itemChoice, setItemChoice] = useState("");
+  const [customItem, setCustomItem] = useState("");
+  const [returnChoice, setReturnChoice] = useState("2h");
+  const [customDeadline, setCustomDeadline] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -84,7 +114,12 @@ function PromiseHome() {
 
   async function submit(event: FormEvent) {
     event.preventDefault(); setBusy(true); setError("");
-    try { const created = await api.createPromise({ item, deadline: new Date(deadline).toISOString(), note }); navigate(`/p/${created.id}`); }
+    const item = itemChoice === "Custom" ? customItem.trim() : itemChoice;
+    const preset = returnOptions.find((option) => option.id === returnChoice);
+    if (!item) { setError("Choose an item or enter your own"); setBusy(false); return; }
+    if (!preset && !customDeadline) { setError("Choose when you will return it"); setBusy(false); return; }
+    const deadline = preset ? new Date(Date.now() + preset.milliseconds) : new Date(customDeadline);
+    try { const created = await api.createPromise({ item, deadline: deadline.toISOString(), note }); navigate(`/p/${created.id}`); }
     catch (reason) { setError(reason instanceof Error ? reason.message : "Could not make promise"); setBusy(false); }
   }
 
@@ -109,7 +144,7 @@ function PromiseHome() {
         <button type="button" disabled>Coming soon</button>
       </article>
     </section> :
-      <form onSubmit={submit} className="form-card promise-form"><div className="flex items-center justify-between"><div><p className="eyebrow text-muted-foreground">Promise to Return</p><h2>What will you return?</h2></div><Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>Back</Button></div><div className="grid gap-2"><Label htmlFor="item">Item</Label><Input id="item" autoFocus maxLength={80} required placeholder="e.g. a portable charger" value={item} onChange={(e) => setItem(e.target.value)} /></div><div className="grid gap-2"><Label htmlFor="deadline">Promise to return it by</Label><Input id="deadline" type="datetime-local" required value={deadline} onChange={(e) => setDeadline(e.target.value)} /></div><div className="grid gap-2"><div className="flex justify-between"><Label htmlFor="note">A note <span className="font-normal text-muted-foreground">(optional)</span></Label><span className="text-xs text-muted-foreground">{note.length}/240</span></div><Textarea id="note" maxLength={240} placeholder="Condition, meeting point, or anything useful…" value={note} onChange={(e) => setNote(e.target.value)} /></div>{error && <p role="alert" className="text-sm text-destructive">{error}</p>}<Button size="lg" disabled={busy} className="h-14 rounded-2xl">{busy && <LoaderCircle className="animate-spin" />}Make this promise <ArrowRight /></Button></form>}
+      <form onSubmit={submit} className="form-card promise-form"><div className="flex items-center justify-between"><div><p className="eyebrow text-muted-foreground">Promise to Return</p><h2>What will you return?</h2></div><Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>Back</Button></div><fieldset><legend>Choose an item</legend><div className="choice-grid">{itemOptions.map(({ label, icon: Icon }) => <button key={label} type="button" className="choice-tile" aria-pressed={itemChoice === label} onClick={() => setItemChoice(label)}><Icon /><span>{label}</span></button>)}<button type="button" className="choice-tile" aria-pressed={itemChoice === "Custom"} onClick={() => setItemChoice("Custom")}><PackageOpen /><span>Custom</span></button></div></fieldset>{itemChoice === "Custom" && <div className="grid gap-2"><Label htmlFor="custom-item">Your item</Label><Input id="custom-item" autoFocus maxLength={80} required placeholder="What are you borrowing?" value={customItem} onChange={(event) => setCustomItem(event.target.value)} /></div>}<fieldset><legend>Return within</legend><div className="duration-grid">{returnOptions.map((option) => <button key={option.id} type="button" aria-pressed={returnChoice === option.id} onClick={() => setReturnChoice(option.id)}>{option.label}</button>)}<button type="button" aria-pressed={returnChoice === "custom"} onClick={() => setReturnChoice("custom")}>Custom</button></div></fieldset>{returnChoice === "custom" && <div className="grid gap-2"><Label htmlFor="deadline">Return date and time</Label><Input id="deadline" type="datetime-local" required value={customDeadline} onChange={(event) => setCustomDeadline(event.target.value)} /></div>}<details className="optional-note"><summary>Add a note <span>(optional)</span></summary><div className="mt-3"><div className="mb-2 text-right text-xs text-muted-foreground">{note.length}/240</div><Textarea id="note" aria-label="Optional note" maxLength={240} placeholder="Condition, meeting point, or anything useful…" value={note} onChange={(event) => setNote(event.target.value)} /></div></details>{error && <p role="alert" className="text-sm text-destructive">{error}</p>}<Button size="lg" disabled={busy || !itemChoice} className="h-14 rounded-2xl">{busy && <LoaderCircle className="animate-spin" />}Make this promise <ArrowRight /></Button></form>}
   </div></Shell>;
 }
 
@@ -183,12 +218,13 @@ function DetailPage() {
   else if (isBorrower && promise.status === "HANDOVER_PENDING") action = { title: "Do you have it in hand?", copy: "Inspect the physical item first. This starts your active promise.", button: "I received the item", endpoint: "receive" };
   else if (isLender && promise.status === "HANDOVER_PENDING") action = { title: "Hand it over in person", copy: "The borrower confirms receipt on their device.", secondary: { label: "Cancel this handover", endpoint: "cancel-handover" } };
   else if (isBorrower && promise.status === "ACTIVE") action = { title: "Ready to give it back?", copy: "Hand the item back first, then ask the lender to confirm.", button: "I handed it back", endpoint: "request-return" };
-  else if (isLender && promise.status === "ACTIVE") action = { title: "The item is out", copy: `The borrower promised to return it by ${time(promise.deadline)}.` };
+  else if (isLender && promise.status === "ACTIVE") action = { title: "The item is out", copy: `The borrower promised to return it ${relativeTime(promise.deadline)}.` };
   else if (isBorrower && promise.status === "RETURN_REQUESTED") action = { title: "Waiting for their check", copy: "The lender needs to inspect and confirm the returned item.", secondary: { label: "Cancel return request", endpoint: "cancel-return" } };
   else if (isLender && promise.status === "RETURN_REQUESTED") action = { title: "Check what came back", copy: "Confirm only after the physical item is back with you.", button: "Item returned · Complete", endpoint: "confirm" };
   else action = { title: "Promise kept", copy: "Both humans completed the handover and return. Nicely done." };
 
-  return <Shell><Link to="/" className="back-link"><ArrowLeft />Back</Link><section className="detail-hero"><div className="flex items-center justify-between"><span className="role-tag">{promise.myRole ? `You’re ${promise.myRole === "borrower" ? "borrowing" : "lending"}` : "Lend request"}</span><span className="text-xs text-muted-foreground">#{promise.id.slice(0, 6)}</span></div><div className="detail-object"><div className="object-icon"><PackageCheck /></div><div><p className="eyebrow text-muted-foreground">The item</p><h1>{promise.item}</h1></div></div><div className="detail-facts"><div><Clock3 /><span><small>Return by</small>{time(promise.deadline)}</span></div><div><ShieldCheck /><span><small>Status</small>{state.label}</span></div></div>{promise.note && <blockquote>“{promise.note}”</blockquote>}</section><section className="action-card" aria-live="polite"><div className="progress-track"><span className={`progress-${promise.status.toLowerCase()}`} /></div><p className="eyebrow text-muted-foreground">Right now · Live</p><h2>{action.title}</h2><p>{action.copy}</p>{isBorrower && promise.status === "REQUESTED" && <div className="qr-wrap"><QRCodeSVG value={shareUrl} size={168} bgColor="transparent" fgColor="currentColor" /><Button variant="outline" onClick={() => void navigator.clipboard.writeText(shareUrl)}><Copy />Copy promise link</Button></div>}{action.button && <Button size="lg" className="mt-6 h-14 w-full rounded-2xl" disabled={busy} onClick={() => void act(action.endpoint!)}>{busy ? <LoaderCircle className="animate-spin" /> : <Check />}{action.button}</Button>}{action.secondary && <Button variant="ghost" className="mt-3 w-full text-muted-foreground" disabled={busy} onClick={() => void act(action.secondary!.endpoint)}>{action.secondary.label}</Button>}{error && <p role="alert" className="mt-4 text-sm text-destructive">{error}</p>}</section></Shell>;
+  const displayedDeadline = isBorrower ? time(promise.deadline) : relativeTime(promise.deadline);
+  return <Shell><Link to="/" className="back-link"><ArrowLeft />Back</Link><section className="detail-hero"><div className="flex items-center justify-between"><span className="role-tag">{promise.myRole ? `You’re ${promise.myRole === "borrower" ? "borrowing" : "lending"}` : "Lend request"}</span><span className="text-xs text-muted-foreground">#{promise.id.slice(0, 6)}</span></div><div className="detail-object"><div className="object-icon"><PackageCheck /></div><div><p className="eyebrow text-muted-foreground">The item</p><h1>{promise.item}</h1></div></div><div className="detail-facts"><div><Clock3 /><span><small>{isBorrower ? "Return by" : "Expected back"}</small>{displayedDeadline}</span></div><div><ShieldCheck /><span><small>Status</small>{state.label}</span></div></div>{promise.note && <blockquote>“{promise.note}”</blockquote>}</section><section className="action-card" aria-live="polite"><div className="progress-track"><span className={`progress-${promise.status.toLowerCase()}`} /></div><p className="eyebrow text-muted-foreground">Right now · Live</p><h2>{action.title}</h2><p>{action.copy}</p>{isBorrower && promise.status === "REQUESTED" && <div className="qr-wrap"><QRCodeSVG value={shareUrl} size={168} bgColor="transparent" fgColor="currentColor" /><Button variant="outline" onClick={() => void navigator.clipboard.writeText(shareUrl)}><Copy />Copy promise link</Button></div>}{action.button && <Button size="lg" className="mt-6 h-14 w-full rounded-2xl" disabled={busy} onClick={() => void act(action.endpoint!)}>{busy ? <LoaderCircle className="animate-spin" /> : <Check />}{action.button}</Button>}{action.secondary && <Button variant="ghost" className="mt-3 w-full text-muted-foreground" disabled={busy} onClick={() => void act(action.secondary!.endpoint)}>{action.secondary.label}</Button>}{error && <p role="alert" className="mt-4 text-sm text-destructive">{error}</p>}</section></Shell>;
 }
 
 export function App() {

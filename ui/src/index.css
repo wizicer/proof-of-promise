@@ -67,6 +67,20 @@
 .promise-type-show-up>button { background: #f39a43; outline-color: #0c1739; }
 .promise-type-card>button:disabled { @apply cursor-not-allowed opacity-45 shadow-none; }
 .promise-form { @apply mx-auto mt-0 border-0 shadow-[0_10px_30px_rgba(23,44,62,.1)]; }
+.promise-form fieldset { @apply min-w-0; }
+.promise-form legend { @apply mb-2 text-sm font-bold; }
+.choice-grid { @apply grid grid-cols-3 gap-2; }
+.choice-tile { @apply flex min-h-[4.5rem] flex-col items-center justify-center gap-1.5 rounded-xl border bg-background px-1.5 py-2 text-center text-[.68rem] font-bold leading-tight text-muted-foreground transition; }
+.choice-tile svg { @apply size-5; }
+.choice-tile:hover { @apply border-primary/70 text-foreground; }
+.choice-tile[aria-pressed="true"] { @apply border-primary bg-primary/20 text-foreground ring-2 ring-primary/30; }
+.duration-grid { @apply grid grid-cols-3 gap-2; }
+.duration-grid button { @apply min-h-10 rounded-xl border bg-background px-2 text-xs font-bold text-muted-foreground transition; }
+.duration-grid button:hover { @apply border-primary/70 text-foreground; }
+.duration-grid button[aria-pressed="true"] { @apply border-primary bg-primary/20 text-foreground ring-2 ring-primary/30; }
+.optional-note { @apply rounded-xl border bg-background px-4 py-3; }
+.optional-note summary { @apply cursor-pointer text-sm font-bold; }
+.optional-note summary span { @apply font-normal text-muted-foreground; }
 .dark .promise-picker-heading h1,.dark .promise-type-card h2 { color: #0c1739; }
 .section-title { @apply mb-4 flex items-center gap-2; }.section-title h2 { @apply text-xl font-black tracking-tight; }.section-title span { @apply grid size-6 place-items-center rounded-full bg-secondary text-xs font-bold; }.card-grid { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-3; }
 .activity-notice { @apply flex max-w-xl items-center gap-3 rounded-2xl border border-primary/40 bg-primary/15 p-3.5 text-sm transition hover:border-primary hover:bg-primary/25; }.activity-notice .notice-icon { @apply grid size-10 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground; }.activity-notice svg { @apply size-5; }.activity-notice strong,.activity-notice small { @apply block; }.activity-notice strong { @apply font-extrabold; }.activity-notice small { @apply mt-0.5 text-xs text-muted-foreground; }.activity-notice.muted { @apply border-border bg-card text-muted-foreground; }
