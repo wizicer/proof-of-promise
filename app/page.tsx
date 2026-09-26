@@ -9,7 +9,7 @@ type Due="hour"|"day"|"custom";
 const statusLabel:Record<HumanPromise["status"],string>={REQUESTED:"Waiting for lender",HANDOVER_PENDING:"Confirm receipt",ACTIVE:"Borrowing",RETURN_REQUESTED:"Return awaiting confirmation",FULFILLED:"Fulfilled"};
 export default function Home(){
   const router=useRouter();const [auth,setAuth]=useState<boolean|null>(null),[history,setHistory]=useState<HumanPromise[]>([]),[error,setError]=useState(""),[saving,setSaving]=useState(false);
-  const [item,setItem]=useState(""),[note,setNote]=useState(""),[due,setDue]=useState<Due>("hour"),[custom,setCustom]=useState("");
+  const [item,setItem]=useState("Power bank"),[note,setNote]=useState(""),[due,setDue]=useState<Due>("hour"),[custom,setCustom]=useState("");
   async function refresh(){const s=await fetch("/api/session",{cache:"no-store"}).then(r=>r.json());setAuth(s.authenticated);if(s.authenticated){const r=await fetch("/api/promises",{cache:"no-store"});if(r.ok)setHistory(await r.json());}}
   useEffect(()=>{refresh()},[]);
   async function create(){setError("");setSaving(true);try{const deadline=due==="custom"?new Date(custom).toISOString():new Date(Date.now()+(due==="hour"?1:24)*3600_000).toISOString();const r=await fetch("/api/promises",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({item,deadline,note})});const data=await r.json();if(!r.ok)throw new Error(data.error);router.push(`/p/${data.id}`)}catch(e){setError(e instanceof Error?e.message:"Could not create request")}finally{setSaving(false)}}
