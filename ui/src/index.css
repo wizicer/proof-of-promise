@@ -123,21 +123,17 @@
 .proof-copy h2 { @apply mt-1 text-xl font-black tracking-tight; }
 .proof-copy>p:not(.eyebrow) { @apply mt-1 text-xs leading-4 text-background/65; }
 .proof-copy button { @apply mt-3 rounded-xl border-background/20 bg-background/10 text-background hover:bg-background/20; }
-.show-up-qr { @apply grid size-28 place-items-center rounded-xl bg-white p-2 text-[#0c1739]; }
-.agent-handoff-card { @apply mt-2 rounded-[1.25rem] border bg-card p-3 shadow-sm; }
-.agent-handoff-heading { @apply flex items-center gap-2; }
-.agent-handoff-heading>span { background: #fff0dc; color: #9a4d15; @apply grid size-10 shrink-0 place-items-center rounded-xl; }
-.agent-handoff-heading>span svg { @apply size-5; }
-.agent-handoff-heading h2 { @apply text-base font-black; }
-.agent-handoff-heading button { @apply ml-auto rounded-xl; }
-.agent-handoff-card>p { @apply mt-2 text-xs leading-5 text-muted-foreground; }
-.agent-prompt-preview { @apply relative mt-2 max-h-14 overflow-hidden rounded-xl bg-secondary px-3 py-2 text-[.68rem] leading-5 text-secondary-foreground; }
-.agent-prompt-preview::after { content: ""; @apply pointer-events-none absolute inset-x-0 bottom-0 h-6; background: linear-gradient(transparent, var(--secondary)); }
-.agent-prompt-preview code { @apply font-sans; }
-.mcp-endpoint { @apply mt-2 min-w-0 rounded-xl border border-dashed px-3 py-2; }
-.mcp-endpoint span,.mcp-endpoint code { @apply block; }
-.mcp-endpoint span { @apply text-[.6rem] font-extrabold uppercase tracking-wider text-muted-foreground; }
-.mcp-endpoint code { @apply mt-1 truncate text-[.68rem] text-foreground; }
+.show-up-qr { @apply grid size-28 shrink-0 place-items-center bg-white p-2 text-[#0c1739]; }
+.show-up-qr svg { @apply block max-w-full; }
+.agent-handoff-card { @apply mt-2 border-2 border-foreground bg-card p-4 shadow-none sm:p-6; }
+.agent-handoff-heading { @apply flex items-center justify-between gap-2; }
+.agent-handoff-heading>p { @apply whitespace-nowrap text-[.65rem] font-black uppercase tracking-[.1em] text-muted-foreground sm:text-xs sm:tracking-[.13em]; }
+.agent-handoff-heading>a { @apply flex shrink-0 items-center gap-1 whitespace-nowrap border-b border-foreground pb-0.5 text-[.58rem] font-black uppercase tracking-[.05em] text-foreground sm:text-[.68rem] sm:tracking-[.08em]; }
+.agent-handoff-heading>a svg { @apply size-3; }
+.agent-prompt-preview { @apply mt-5 border border-border bg-background px-4 py-4 text-sm leading-6 text-foreground; }
+.agent-handoff-footer { @apply mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center; }
+.agent-handoff-footer>p { @apply text-xs leading-5 text-muted-foreground; }
+.agent-handoff-footer button { @apply h-11 justify-self-stretch rounded-none bg-foreground px-5 font-extrabold text-background hover:bg-foreground/85 sm:justify-self-end; }
 .dark .promise-picker-heading h1,.dark .promise-type-card h2 { color: #0c1739; }
 .activity-section { @apply mt-5; }
 .section-title { @apply mb-2 flex items-center gap-2; }.section-title h2 { @apply text-base font-black tracking-tight; }.section-title span { @apply grid size-5 place-items-center rounded-full bg-secondary text-[.65rem] font-bold; }.card-grid { @apply grid gap-2 sm:grid-cols-2; }

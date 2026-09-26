@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, NavLink, Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
-import { Activity as ActivityIcon, ArrowLeft, ArrowRight, BatteryCharging, BellRing, BookOpen, Bot, Cable, CalendarCheck2, Check, ChevronDown, Clock3, Copy, Fingerprint, HandHeart, Headphones, Home, LoaderCircle, LogOut, MapPin, Moon, PackageCheck, PackageOpen, PlugZap, ScanLine, ShieldCheck, Sun, Umbrella, Unplug, UserRound, Wrench, type LucideIcon } from "lucide-react";
+import { Activity as ActivityIcon, ArrowLeft, ArrowRight, BatteryCharging, BellRing, BookOpen, Cable, CalendarCheck2, Check, ChevronDown, Clock3, Copy, ExternalLink, Fingerprint, HandHeart, Headphones, Home, LoaderCircle, LogOut, MapPin, Moon, PackageCheck, PackageOpen, PlugZap, ScanLine, ShieldCheck, Sun, Umbrella, Unplug, UserRound, Wrench, type LucideIcon } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -316,14 +316,13 @@ function ShowUpDetail({ promise }: { promise: HumanPromise & { showUp: NonNullab
 
     <section className="show-up-proof-card">
       <div className="proof-copy"><p className="eyebrow">Share this promise</p><h2>Let anyone verify it</h2><p>The QR code opens this committed promise and its details.</p><Button variant="outline" size="sm" onClick={() => void copy(shareUrl, "link")}><Copy />{copied === "link" ? "Copied" : "Copy link"}</Button></div>
-      <div className="show-up-qr"><QRCodeSVG value={shareUrl} size={112} bgColor="transparent" fgColor="currentColor" /></div>
+      <div className="show-up-qr"><QRCodeSVG value={shareUrl} size={96} bgColor="transparent" fgColor="currentColor" /></div>
     </section>
 
     <section className="agent-handoff-card">
-      <div className="agent-handoff-heading"><span><Bot /></span><div><p className="eyebrow">Agent handoff</p><h2>Use Promise through MCP</h2></div><Button variant="outline" size="sm" onClick={() => void copy(agentInstructions, "agent")}><Copy />{copied === "agent" ? "Copied" : "Copy"}</Button></div>
-      <p>Give this instruction to your agent so it can verify the promise and take care of the next task.</p>
-      <div className="agent-prompt-preview"><code>{agentInstructions}</code></div>
-      <div className="mcp-endpoint"><span>MCP endpoint</span><code>{mcpUrl}</code></div>
+      <div className="agent-handoff-heading"><p>Prompt for your agent</p><a href={mcpUrl} target="_blank" rel="noreferrer">View MCP endpoint <ExternalLink /></a></div>
+      <div className="agent-prompt-preview"><p>{agentInstructions}</p></div>
+      <div className="agent-handoff-footer"><p>Give this prompt to your agent so it can verify the promise and take care of the next task.</p><Button onClick={() => void copy(agentInstructions, "agent")}><Copy />{copied === "agent" ? "Copied" : "Copy prompt"}</Button></div>
     </section>
   </div></Shell>;
 }
