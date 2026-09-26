@@ -3,6 +3,7 @@ import { createReadStream } from "node:fs";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig, type Plugin } from "vite";
+import { VitePWA } from "vite-plugin-pwa";
 
 const publicPort = Number(process.env.PORT ?? 3000);
 const internalPort = Number(process.env.VITE_INTERNAL_PORT ?? 5173);
@@ -24,7 +25,43 @@ function serveIdkitWasm(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [serveIdkitWasm(), react(), tailwindcss()],
+  plugins: [
+    serveIdkitWasm(),
+    react(),
+    tailwindcss(),
+    VitePWA({
+      registerType: "autoUpdate",
+      includeAssets: ["pwa-icon.svg", "apple-touch-icon.png"],
+      manifest: {
+        name: "Borrow From A Human",
+        short_name: "Borrow",
+        description: "Make simple promises with verified humans.",
+        theme_color: "#d9ff5b",
+        background_color: "#f6f5ed",
+        display: "standalone",
+        start_url: "/",
+        scope: "/",
+        orientation: "portrait-primary",
+        categories: ["lifestyle", "utilities"],
+        icons: [
+          { src: "/pwa-192x192.png", sizes: "192x192", type: "image/png" },
+          { src: "/pwa-512x512.png", sizes: "512x512", type: "image/png" },
+          { src: "/pwa-maskable-512x512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+        ],
+      },
+      workbox: {
+        navigateFallback: "/index.html",
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,wasm}"],
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.pathname.startsWith("/api/"),
+            handler: "NetworkOnly",
+          },
+        ],
+      },
+      devOptions: { enabled: true, navigateFallbackAllowlist: [/^(?!\/api\/)/] },
+    }),
+  ],
   envDir: path.resolve(__dirname, ".."),
   resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
   server: {

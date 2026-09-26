@@ -6,4 +6,5 @@ node_modules
 .data/
 dist/
 ui/dist/
+ui/dev-dist/
 server/dist/
