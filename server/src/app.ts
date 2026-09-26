@@ -9,6 +9,7 @@ import { authRouter } from "./routes/auth.js";
 import { sessionRouter } from "./routes/session.js";
 import { promisesRouter } from "./routes/promises.js";
 import { merchantRouter } from "./routes/merchant.js";
+import { mcpRequestHandler } from "./mcp.js";
 
 type FrontendOptions =
   | { mode?: "none" }
@@ -41,6 +42,8 @@ export function createApp(frontend: FrontendOptions = {}) {
   app.use(cookieParser());
 
   app.get("/api/health", (_request, response) => response.json({ ok: true }));
+
+  app.all("/mcp", (request, response) => void mcpRequestHandler(request, response, request.body));
 
   app.use(authRouter);
   app.use(sessionRouter);

@@ -54,6 +54,48 @@ test("missing promise returns a public not-found response", async () => {
   assert.equal(response.status, 404);
 });
 
+async function callMcp(promiseId: string, id: number, method: string, params: Record<string, unknown> = {}) {
+  const response = await fetch(`${origin}/mcp?promiseId=${encodeURIComponent(promiseId)}`, {
+    method: "POST",
+    headers: {
+      accept: "application/json, text/event-stream",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ jsonrpc: "2.0", id, method, params }),
+  });
+  assert.equal(response.status, 200);
+  const body = await response.text();
+  const payload = response.headers.get("content-type")?.includes("text/event-stream")
+    ? body.split("\n").find((line) => line.startsWith("data: "))?.slice(6)
+    : body;
+  assert.ok(payload);
+  return JSON.parse(payload) as { result: Record<string, unknown> };
+}
+
+test("MCP exposes only boolean verification for committed show-up promises", async () => {
+  const { createPromise, createShowUpPromise, currentPerson, loginByWorldSession } = await import("./store.js");
+  const person = (await currentPerson(await loginByWorldSession("session_mcp-verification")))!;
+  const deadline = new Date(Date.now() + 3_600_000).toISOString();
+  const showUp = await createShowUpPromise(person, deadline, "private note", {
+    latitude: 35.6812,
+    longitude: 139.7671,
+    radiusMeters: 500,
+    centerTime: "18:00",
+    windowHours: 2,
+    timezone: "Asia/Tokyo",
+  });
+  const peer = await createPromise(person, "Umbrella", deadline, "");
+
+  const listed = await callMcp(showUp.id, 1, "tools/list");
+  assert.deepEqual((listed.result.tools as Array<{ name: string }>).map((tool) => tool.name), ["verify_promise"]);
+
+  for (const [promiseId, verified] of [[showUp.id, true], [peer.id, false], ["missing", false]] as const) {
+    const called = await callMcp(promiseId, verified ? 2 : 3, "tools/call", { name: "verify_promise", arguments: {} });
+    assert.deepEqual(called.result.structuredContent, { verified });
+    assert.deepEqual(called.result.content, [{ type: "text", text: JSON.stringify({ verified }) }]);
+  }
+});
+
 test("merchant completion cannot bypass the peer-to-peer return flow", async () => {
   const {
     borrowB2CPromise,
