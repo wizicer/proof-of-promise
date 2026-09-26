@@ -37,6 +37,7 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "favicon-32x32.png", "favicon-16x16.png", "apple-touch-icon.png", "brand-icon.png"],
       manifest: {
+        id: "/",
         name: "Promise",
         short_name: "Promise",
         description: "Make clear promises with verified humans and keep them together.",
@@ -45,6 +46,7 @@ export default defineConfig({
         display: "standalone",
         start_url: "/",
         scope: "/",
+        launch_handler: { client_mode: "navigate-existing" },
         orientation: "portrait-primary",
         categories: ["lifestyle", "utilities"],
         icons: [
