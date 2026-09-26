@@ -1,17 +1,16 @@
 # Borrow From A Human
 
-A mobile-first Proof of Promise app for borrowing an item from another verified human.
+A mobile-first Proof of Promise app for creating and tracking commitments between verified humans.
 
 The repository is an npm workspaces monorepo with two applications:
 
 - `ui/` — React 19, Vite, Tailwind CSS, Shadcn UI, and World ID IDKit
 - `server/` — Node.js, Express, TypeScript, and atomic JSON persistence
 - `packages/shared/` — shared domain types and status definitions
-- `Legacy/` — the archived Next.js implementation
 
 ## Local development
 
-Copy `.env.example` to the repository-root `.env.local`. Both Vite and Express load that shared file: the UI uses `VITE_WORLD_APP_ID` and `VITE_WORLD_ENV`; the server uses `WORLD_RP_ID`, `WORLD_RP_SIGNING_KEY`, and `WORLD_ENV`.
+Copy `.env.example` to the repository-root `.env.local`. The server loads the World ID RP, OAuth, environment, and persistence settings from that file.
 
 ```bash
 npm install
@@ -31,10 +30,10 @@ npm start
 
 In production, Express serves both `/api/*` and the compiled React application from `ui/dist` on `http://localhost:3000`; Vite does not run.
 
-## Promise flow
+## Borrow-and-return flow
 
 1. Sign in with World ID.
-2. Create a lend promise with an item, return deadline, and optional note.
+2. Create a borrowing promise with an item, return deadline, and optional note.
 3. The lender opens the QR/link and agrees to hand over the item.
 4. The borrower confirms physical receipt.
 5. The borrower hands the item back and requests return confirmation.
