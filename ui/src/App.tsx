@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, NavLink, Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Check, ChevronDown, Clock3, Copy, Fingerprint, HandHeart, History, Home, LoaderCircle, LogOut, Moon, PackageCheck, Plus, ScanLine, ShieldCheck, Sun, UserRound } from "lucide-react";
+import { Activity as ActivityIcon, ArrowLeft, ArrowRight, BellRing, Check, ChevronDown, Clock3, Copy, Fingerprint, HandHeart, Home, LoaderCircle, LogOut, Moon, PackageCheck, Plus, ScanLine, ShieldCheck, Sun, UserRound } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -55,7 +55,7 @@ function Shell({ children }: { children: ReactNode }) {
       <main className="mx-auto max-w-5xl px-5 pb-28 pt-7">{children}</main>
       <nav className="bottom-nav" aria-label="Primary navigation">
         <NavLink to="/" end><Home /><span>Promise</span></NavLink>
-        <NavLink to="/history"><History /><span>History</span></NavLink>
+        <NavLink to="/activity"><ActivityIcon /><span>Activity</span></NavLink>
         <NavLink to="/personal"><UserRound /><span>Personal</span></NavLink>
       </nav>
     </div>
@@ -92,15 +92,24 @@ function PromiseHome() {
   return <Shell><section className="page-heading"><p className="eyebrow text-muted-foreground">Promise tab</p><h1>What do you need<br />from a human?</h1><p>Make a clear, time-bound promise. Keep it together, in person.</p></section>
     {!open ? <button className="make-card" onClick={() => setOpen(true)}><span className="make-icon"><Plus /></span><span><strong>Make a promise</strong><small>Start with a lend request</small></span><ArrowRight /></button> :
       <form onSubmit={submit} className="form-card"><div className="flex items-center justify-between"><div><p className="eyebrow text-muted-foreground">New promise · Lend</p><h2>Ask to borrow</h2></div><Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>Close</Button></div><div className="grid gap-2"><Label htmlFor="item">What do you need?</Label><Input id="item" autoFocus maxLength={80} required placeholder="e.g. a portable charger" value={item} onChange={(e) => setItem(e.target.value)} /></div><div className="grid gap-2"><Label htmlFor="deadline">Return by</Label><Input id="deadline" type="datetime-local" required value={deadline} onChange={(e) => setDeadline(e.target.value)} /></div><div className="grid gap-2"><div className="flex justify-between"><Label htmlFor="note">A note <span className="font-normal text-muted-foreground">(optional)</span></Label><span className="text-xs text-muted-foreground">{note.length}/240</span></div><Textarea id="note" maxLength={240} placeholder="Condition, meeting point, or anything useful…" value={note} onChange={(e) => setNote(e.target.value)} /></div>{error && <p role="alert" className="text-sm text-destructive">{error}</p>}<Button size="lg" disabled={busy} className="h-14 rounded-2xl">{busy && <LoaderCircle className="animate-spin" />}Create lend promise <ArrowRight /></Button></form>}
-    <section className="mt-10"><div className="section-title"><h2>In motion</h2><span>{active.length}</span></div>{promises === null ? <div className="grid place-items-center py-14"><LoaderCircle className="animate-spin text-muted-foreground" /></div> : active.length ? <div className="card-grid">{active.map((entry) => <PromiseCard key={entry.id} promise={entry} />)}</div> : <Empty title="No promises in motion" copy="When you make or join one, it will live right here." />}</section>
+    {promises === null ? <div className="activity-notice muted mt-8"><LoaderCircle className="animate-spin" /><span>Checking your activity…</span></div> : active.length > 0 && <Link to="/activity" className="activity-notice mt-8"><span className="notice-icon"><BellRing /></span><span><strong>{active.length} {active.length === 1 ? "promise" : "promises"} in motion</strong><small>See what needs attention</small></span><ArrowRight className="ml-auto" /></Link>}
   </Shell>;
 }
 
-function HistoryPage() {
+function ActivityPage() {
   const [promises, setPromises] = useState<HumanPromise[] | null>(null);
-  useEffect(() => { api.promises().then(setPromises).catch(() => setPromises([])); }, []);
+  useEffect(() => {
+    let active = true;
+    const sync = () => { if (document.visibilityState === "visible") void api.promises().then((value) => { if (active) setPromises(value); }).catch(() => { if (active) setPromises([]); }); };
+    sync();
+    const interval = window.setInterval(sync, 3_000);
+    window.addEventListener("focus", sync);
+    document.addEventListener("visibilitychange", sync);
+    return () => { active = false; window.clearInterval(interval); window.removeEventListener("focus", sync); document.removeEventListener("visibilitychange", sync); };
+  }, []);
+  const active = promises?.filter((entry) => entry.status !== "FULFILLED") ?? [];
   const done = promises?.filter((entry) => entry.status === "FULFILLED") ?? [];
-  return <Shell><section className="page-heading"><p className="eyebrow text-muted-foreground">History tab</p><h1>Promises<br />you kept.</h1><p>A private trail of things borrowed, returned, and confirmed.</p></section><div className="mt-8">{promises === null ? <div className="grid place-items-center py-16"><LoaderCircle className="animate-spin" /></div> : done.length ? <div className="card-grid">{done.map((entry) => <PromiseCard key={entry.id} promise={entry} />)}</div> : <Empty title="Your history is unwritten" copy="Completed promises will collect here—quiet proof that trust worked." />}</div></Shell>;
+  return <Shell><section className="page-heading"><p className="eyebrow text-muted-foreground">Activity tab</p><h1>Every promise,<br />right now.</h1><p>Follow what is moving today and the promises you have already kept.</p></section>{promises === null ? <div className="grid place-items-center py-16"><LoaderCircle className="animate-spin" /></div> : <><section className="mt-10"><div className="section-title"><h2>In motion</h2><span>{active.length}</span></div>{active.length ? <div className="card-grid">{active.map((entry) => <PromiseCard key={entry.id} promise={entry} />)}</div> : <Empty title="Nothing needs attention" copy="Your next active promise will appear here." />}</section><section className="mt-10"><div className="section-title"><h2>Promises kept</h2><span>{done.length}</span></div>{done.length ? <div className="card-grid">{done.map((entry) => <PromiseCard key={entry.id} promise={entry} />)}</div> : <Empty title="Your history is unwritten" copy="Completed promises will collect here—quiet proof that trust worked." />}</section></>}</Shell>;
 }
 
 function PersonalPage({ onLogout }: { onLogout: () => Promise<void> }) {
@@ -172,5 +181,5 @@ export function App() {
   useEffect(() => { refresh().catch(() => setAuth(false)); }, []);
   if (auth === null) return <div className="grid min-h-dvh place-items-center bg-primary"><LoaderCircle className="animate-spin text-primary-foreground" /></div>;
   if (!auth) return <Login onVerified={refresh} />;
-  return <Routes><Route path="/" element={<PromiseHome />} /><Route path="/history" element={<HistoryPage />} /><Route path="/personal" element={<PersonalPage onLogout={signOut} />} /><Route path="/p/:id" element={<DetailPage />} /><Route path="*" element={<Navigate to="/" replace />} /></Routes>;
+  return <Routes><Route path="/" element={<PromiseHome />} /><Route path="/activity" element={<ActivityPage />} /><Route path="/history" element={<Navigate to="/activity" replace />} /><Route path="/personal" element={<PersonalPage onLogout={signOut} />} /><Route path="/p/:id" element={<DetailPage />} /><Route path="*" element={<Navigate to="/" replace />} /></Routes>;
 }
