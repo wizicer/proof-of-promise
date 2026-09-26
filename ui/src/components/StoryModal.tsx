@@ -232,6 +232,10 @@ export function StoryModal({ open, onClose }: StoryModalProps) {
             {/* Slide 3 */}
             <div className="flex h-full w-full shrink-0 flex-col items-center justify-between px-6 py-6 text-center">
               <div className="my-auto flex flex-col items-center w-full max-w-xs">
+                <h3 className="mb-6 text-lg sm:text-xl font-extrabold text-white/90">
+                  You could ask for all of that.
+                </h3>
+
                 <div className="mb-6 flex flex-col gap-2.5 w-full">
                   <div className="flex items-center gap-3.5 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left backdrop-blur-sm transition transform hover:scale-[1.02]">
                     <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-blue-500/20 text-blue-400">
@@ -261,9 +265,6 @@ export function StoryModal({ open, onClose }: StoryModalProps) {
                   </div>
                 </div>
 
-                <h3 className="text-lg sm:text-xl font-extrabold text-white/90">
-                  You could ask for all of that.
-                </h3>
                 <p className="mt-3 text-sm font-semibold text-rose-400/90 tracking-wide bg-rose-500/10 border border-rose-500/20 rounded-full px-4 py-1.5">
                   But that feels like too much.
                 </p>
