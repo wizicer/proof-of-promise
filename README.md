@@ -13,18 +13,13 @@ The active project is intentionally split into two independent applications:
 Copy `.env.example` to `.env.local`, then expose the variables to each process using your preferred environment loader. The UI needs `VITE_WORLD_APP_ID` and `VITE_WORLD_ENV`; the server needs `WORLD_RP_ID`, `WORLD_RP_SIGNING_KEY`, and `WORLD_ENV`.
 
 ```bash
-cd server
 npm install
+npm --prefix server install
+npm --prefix ui install
 npm run dev
 ```
 
-In a second terminal:
-
-```bash
-cd ui
-npm install
-npm run dev
-```
+The root `dev` command starts Express and Vite together. To run only one side, use `npm run dev:server` or `npm run dev:ui`.
 
 Open `http://localhost:5173`. Vite proxies `/api` to Express at `http://localhost:3001`.
 

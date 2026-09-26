@@ -1,0 +1,13 @@
+{
+  "name": "borrow-from-a-human",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently --kill-others-on-fail --names server,ui --prefix-colors blue,green \"npm run dev:server\" \"npm run dev:ui\"",
+    "dev:server": "npm --prefix server run dev",
+    "dev:ui": "npm --prefix ui run dev"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
