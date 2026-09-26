@@ -1,7 +1,7 @@
 import type { HumanPromise } from "@/types";
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, { ...init, headers: { "content-type": "application/json", ...init?.headers } });
+  const response = await fetch(url, { cache: "no-store", ...init, headers: { "content-type": "application/json", ...init?.headers } });
   const body = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(body.error ?? "Something went wrong");
   return body as T;

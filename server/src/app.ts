@@ -33,6 +33,7 @@ export function createApp(frontend: FrontendOptions = {}) {
     response.locals.requestId = requestId;
     response.setHeader("x-request-id", requestId);
     if (request.path.startsWith("/api/")) {
+      response.setHeader("Cache-Control", "no-store");
       const started = performance.now();
       response.on("finish", () => console.info(JSON.stringify({
         scope: "api",

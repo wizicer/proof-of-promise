@@ -117,8 +117,33 @@ function DetailPage() {
   async function refresh() { try { setPromise(await api.promise(id)); } catch (reason) { setError(reason instanceof Error ? reason.message : "Promise unavailable"); } }
   useEffect(() => {
     let active = true;
-    api.promise(id).then((value) => { if (active) setPromise(value); }).catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : "Promise unavailable"); });
-    return () => { active = false; };
+    let inFlight = false;
+    async function sync(showError: boolean) {
+      if (inFlight) return;
+      inFlight = true;
+      try {
+        const value = await api.promise(id);
+        if (active) {
+          setPromise((current) => current && current.status === value.status && current.myRole === value.myRole && current.fulfilledAt === value.fulfilledAt ? current : value);
+          setError("");
+        }
+      } catch (reason) {
+        if (active && showError) setError(reason instanceof Error ? reason.message : "Promise unavailable");
+      } finally {
+        inFlight = false;
+      }
+    }
+    const syncWhenVisible = () => { if (document.visibilityState === "visible") void sync(false); };
+    void sync(true);
+    const interval = window.setInterval(syncWhenVisible, 1_500);
+    window.addEventListener("focus", syncWhenVisible);
+    document.addEventListener("visibilitychange", syncWhenVisible);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+      window.removeEventListener("focus", syncWhenVisible);
+      document.removeEventListener("visibilitychange", syncWhenVisible);
+    };
   }, [id]);
   async function act(action: string) { setBusy(true); setError(""); try { await api.act(id, action); await refresh(); } catch (reason) { setError(reason instanceof Error ? reason.message : "Action failed"); } finally { setBusy(false); } }
   if (!promise) return <Shell><div className="grid min-h-[60vh] place-items-center">{error ? <Empty title="Promise unavailable" copy={error} /> : <LoaderCircle className="animate-spin" />}</div></Shell>;
@@ -137,7 +162,7 @@ function DetailPage() {
   else if (isLender && promise.status === "RETURN_REQUESTED") action = { title: "Check what came back", copy: "Confirm only after the physical item is back with you.", button: "Item returned · Complete", endpoint: "confirm" };
   else action = { title: "Promise kept", copy: "Both humans completed the handover and return. Nicely done." };
 
-  return <Shell><Link to="/" className="back-link"><ArrowLeft />Back</Link><section className="detail-hero"><div className="flex items-center justify-between"><span className="role-tag">{promise.myRole ? `You’re ${promise.myRole === "borrower" ? "borrowing" : "lending"}` : "Lend request"}</span><span className="text-xs text-muted-foreground">#{promise.id.slice(0, 6)}</span></div><div className="detail-object"><div className="object-icon"><PackageCheck /></div><div><p className="eyebrow text-muted-foreground">The item</p><h1>{promise.item}</h1></div></div><div className="detail-facts"><div><Clock3 /><span><small>Return by</small>{time(promise.deadline)}</span></div><div><ShieldCheck /><span><small>Status</small>{state.label}</span></div></div>{promise.note && <blockquote>“{promise.note}”</blockquote>}</section><section className="action-card"><div className="progress-track"><span className={`progress-${promise.status.toLowerCase()}`} /></div><p className="eyebrow text-muted-foreground">Right now</p><h2>{action.title}</h2><p>{action.copy}</p>{isBorrower && promise.status === "REQUESTED" && <div className="qr-wrap"><QRCodeSVG value={shareUrl} size={168} bgColor="transparent" fgColor="currentColor" /><Button variant="outline" onClick={() => void navigator.clipboard.writeText(shareUrl)}><Copy />Copy promise link</Button></div>}{action.button && <Button size="lg" className="mt-6 h-14 w-full rounded-2xl" disabled={busy} onClick={() => void act(action.endpoint!)}>{busy ? <LoaderCircle className="animate-spin" /> : <Check />}{action.button}</Button>}{action.secondary && <Button variant="ghost" className="mt-3 w-full text-muted-foreground" disabled={busy} onClick={() => void act(action.secondary!.endpoint)}>{action.secondary.label}</Button>}{error && <p role="alert" className="mt-4 text-sm text-destructive">{error}</p>}</section></Shell>;
+  return <Shell><Link to="/" className="back-link"><ArrowLeft />Back</Link><section className="detail-hero"><div className="flex items-center justify-between"><span className="role-tag">{promise.myRole ? `You’re ${promise.myRole === "borrower" ? "borrowing" : "lending"}` : "Lend request"}</span><span className="text-xs text-muted-foreground">#{promise.id.slice(0, 6)}</span></div><div className="detail-object"><div className="object-icon"><PackageCheck /></div><div><p className="eyebrow text-muted-foreground">The item</p><h1>{promise.item}</h1></div></div><div className="detail-facts"><div><Clock3 /><span><small>Return by</small>{time(promise.deadline)}</span></div><div><ShieldCheck /><span><small>Status</small>{state.label}</span></div></div>{promise.note && <blockquote>“{promise.note}”</blockquote>}</section><section className="action-card" aria-live="polite"><div className="progress-track"><span className={`progress-${promise.status.toLowerCase()}`} /></div><p className="eyebrow text-muted-foreground">Right now · Live</p><h2>{action.title}</h2><p>{action.copy}</p>{isBorrower && promise.status === "REQUESTED" && <div className="qr-wrap"><QRCodeSVG value={shareUrl} size={168} bgColor="transparent" fgColor="currentColor" /><Button variant="outline" onClick={() => void navigator.clipboard.writeText(shareUrl)}><Copy />Copy promise link</Button></div>}{action.button && <Button size="lg" className="mt-6 h-14 w-full rounded-2xl" disabled={busy} onClick={() => void act(action.endpoint!)}>{busy ? <LoaderCircle className="animate-spin" /> : <Check />}{action.button}</Button>}{action.secondary && <Button variant="ghost" className="mt-3 w-full text-muted-foreground" disabled={busy} onClick={() => void act(action.secondary!.endpoint)}>{action.secondary.label}</Button>}{error && <p role="alert" className="mt-4 text-sm text-destructive">{error}</p>}</section></Shell>;
 }
 
 export function App() {
