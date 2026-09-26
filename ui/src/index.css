@@ -1,0 +1,57 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: oklch(0.975 0.008 95); --foreground: oklch(0.18 0.035 250);
+  --card: oklch(1 0 0); --card-foreground: var(--foreground);
+  --popover: var(--card); --popover-foreground: var(--foreground);
+  --primary: oklch(0.9 0.2 124); --primary-foreground: oklch(0.18 0.035 250);
+  --secondary: oklch(0.93 0.02 245); --secondary-foreground: var(--foreground);
+  --muted: oklch(0.94 0.012 95); --muted-foreground: oklch(0.52 0.025 250);
+  --accent: oklch(0.91 0.045 243); --accent-foreground: var(--foreground);
+  --destructive: oklch(0.58 0.22 25); --border: oklch(0.87 0.018 95); --input: var(--border); --ring: oklch(0.72 0.18 124);
+  --success: oklch(0.63 0.17 155); --radius: 1rem;
+}
+.dark {
+  --background: oklch(0.15 0.025 250); --foreground: oklch(0.94 0.01 95);
+  --card: oklch(0.2 0.03 250); --card-foreground: var(--foreground);
+  --popover: oklch(0.21 0.03 250); --popover-foreground: var(--foreground);
+  --primary: oklch(0.86 0.2 124); --primary-foreground: oklch(0.16 0.03 250);
+  --secondary: oklch(0.26 0.025 250); --secondary-foreground: var(--foreground);
+  --muted: oklch(0.24 0.02 250); --muted-foreground: oklch(0.7 0.025 250);
+  --accent: oklch(0.28 0.04 245); --accent-foreground: var(--foreground);
+  --destructive: oklch(0.7 0.19 24); --border: oklch(1 0 0 / 12%); --input: oklch(1 0 0 / 15%); --ring: oklch(0.82 0.18 124);
+  --success: oklch(0.72 0.17 155);
+}
+
+@theme inline {
+  --color-background: var(--background); --color-foreground: var(--foreground); --color-card: var(--card); --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover); --color-popover-foreground: var(--popover-foreground); --color-primary: var(--primary); --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary); --color-secondary-foreground: var(--secondary-foreground); --color-muted: var(--muted); --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent); --color-accent-foreground: var(--accent-foreground); --color-destructive: var(--destructive); --color-border: var(--border); --color-input: var(--input); --color-ring: var(--ring); --color-success: var(--success);
+  --radius-sm: calc(var(--radius) - 4px); --radius-md: calc(var(--radius) - 2px); --radius-lg: var(--radius); --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base { * { @apply border-border outline-ring/50; } body { @apply bg-background text-foreground antialiased; font-family: Inter, ui-sans-serif, system-ui, sans-serif; } button, a { -webkit-tap-highlight-color: transparent; } }
+
+.login-screen { @apply min-h-dvh overflow-hidden bg-primary text-primary-foreground; background-image: radial-gradient(circle at 20% 15%, oklch(1 0 0 / 45%), transparent 26%), linear-gradient(145deg, transparent 55%, oklch(.79 .21 120 / 50%)); }
+.login-orbit { @apply pointer-events-none absolute inset-0 overflow-hidden; }
+.login-orbit span { @apply absolute rounded-full border border-primary-foreground/15; width: 34rem; height: 34rem; right: -22rem; top: 8rem; }
+.login-orbit span:nth-child(2) { width: 24rem; height: 24rem; right: -13rem; top: 13rem; }.login-orbit span:nth-child(3) { width: 14rem; height: 14rem; right: -5rem; top: 18rem; }
+.brand-mark { @apply grid size-10 place-items-center rounded-2xl bg-foreground text-background; }.brand-mark svg { @apply size-5; }.brand-mark.small { @apply size-9 rounded-xl bg-primary text-primary-foreground; }
+.eyebrow { @apply text-[.7rem] font-extrabold uppercase tracking-[.18em]; }
+.verified-pill { @apply flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1.5 text-xs font-bold text-secondary-foreground; }.verified-pill svg { @apply size-3.5; }
+.bottom-nav { @apply fixed inset-x-3 bottom-3 z-30 mx-auto grid max-w-md grid-cols-3 rounded-[1.4rem] border border-border/80 bg-card/90 p-1.5 shadow-xl shadow-foreground/10 backdrop-blur-xl; padding-bottom: max(.375rem, env(safe-area-inset-bottom)); }.bottom-nav a { @apply flex flex-col items-center gap-1 rounded-2xl px-3 py-2 text-[.68rem] font-bold text-muted-foreground transition; }.bottom-nav svg { @apply size-5; }.bottom-nav a.active { @apply bg-primary text-primary-foreground; }
+.page-heading h1 { @apply mt-3 max-w-2xl text-4xl font-black leading-[.98] tracking-[-.055em] sm:text-6xl; }.page-heading>p:last-child { @apply mt-4 max-w-md text-sm leading-6 text-muted-foreground sm:text-base; }
+.make-card { @apply mt-8 flex w-full items-center gap-4 rounded-[1.75rem] bg-foreground p-5 text-left text-background shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl sm:max-w-xl; }.make-card .make-icon { @apply grid size-12 place-items-center rounded-2xl bg-primary text-primary-foreground; }.make-card .make-icon svg { @apply size-6; }.make-card strong,.make-card small { @apply block; }.make-card strong { @apply text-lg; }.make-card small { @apply mt-0.5 text-sm text-background/60; }.make-card>svg { @apply ml-auto size-5; }
+.form-card { @apply mt-8 grid max-w-xl gap-5 rounded-[1.75rem] border bg-card p-5 shadow-sm sm:p-7; }.form-card h2 { @apply mt-1 text-2xl font-black tracking-tight; }.form-card input,.form-card textarea { @apply rounded-xl bg-background; }
+.section-title { @apply mb-4 flex items-center gap-2; }.section-title h2 { @apply text-xl font-black tracking-tight; }.section-title span { @apply grid size-6 place-items-center rounded-full bg-secondary text-xs font-bold; }.card-grid { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-3; }
+.promise-card { @apply block rounded-[1.5rem] border bg-card p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md; }.promise-card h3 { @apply mt-5 text-2xl font-black tracking-tight; }.promise-card>p { @apply mt-1 text-sm text-muted-foreground; }.role-tag { @apply rounded-full bg-secondary px-2.5 py-1 text-[.68rem] font-bold uppercase tracking-wide text-secondary-foreground; }
+.status-dot { @apply grid size-9 place-items-center rounded-full bg-secondary; }.status-dot span { @apply size-2.5 rounded-full bg-muted-foreground; }.status-active span,.status-return_requested span { @apply bg-primary; }.status-fulfilled span { @apply bg-success; }.status-handover_pending span { @apply bg-orange-400; }
+.empty-state { @apply grid justify-items-center rounded-[1.75rem] border border-dashed bg-card/40 px-6 py-14 text-center; }.empty-state>span { @apply grid size-12 place-items-center rounded-2xl bg-secondary text-muted-foreground; }.empty-state h3 { @apply mt-4 font-bold; }.empty-state p { @apply mt-1 max-w-xs text-sm leading-6 text-muted-foreground; }
+.profile-card { @apply mt-8 flex items-center gap-4 rounded-[1.5rem] border bg-card p-5; }.profile-avatar { @apply grid size-12 place-items-center rounded-full bg-primary text-primary-foreground; }.settings-card { @apply mt-5 divide-y rounded-[1.5rem] border bg-card px-5; }.setting-row { @apply flex min-h-24 items-center justify-between gap-4 py-4; }.setting-row strong,.setting-row p { @apply block; }.setting-row p { @apply mt-1 text-xs text-muted-foreground; }
+.back-link { @apply mb-5 inline-flex items-center gap-2 text-sm font-bold text-muted-foreground hover:text-foreground; }.back-link svg { @apply size-4; }.detail-hero { @apply rounded-[2rem] border bg-card p-5 sm:p-8; }.detail-object { @apply my-8 flex items-center gap-4; }.object-icon { @apply grid size-14 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground; }.detail-object h1 { @apply mt-1 break-words text-3xl font-black tracking-[-.04em] sm:text-5xl; }.detail-facts { @apply grid gap-3 border-y py-5 sm:grid-cols-2; }.detail-facts>div { @apply flex items-center gap-3; }.detail-facts svg { @apply size-5 text-muted-foreground; }.detail-facts small,.detail-facts span { @apply block; }.detail-facts small { @apply mb-0.5 text-[.65rem] font-bold uppercase tracking-wider text-muted-foreground; }.detail-facts span { @apply text-sm font-bold; }.detail-hero blockquote { @apply mt-5 text-sm italic leading-6 text-muted-foreground; }
+.action-card { @apply relative mt-4 overflow-hidden rounded-[2rem] bg-foreground p-6 text-background sm:p-8; }.action-card h2 { @apply mt-2 text-2xl font-black tracking-tight; }.action-card>p:not(.eyebrow) { @apply mt-2 max-w-lg text-sm leading-6 text-background/65; }.progress-track { @apply absolute inset-x-0 top-0 h-1.5 bg-background/10; }.progress-track span { @apply block h-full bg-primary; }.progress-requested { width: 18%; }.progress-handover_pending { width: 38%; }.progress-active { width: 60%; }.progress-return_requested { width: 82%; }.progress-fulfilled { width: 100%; }.qr-wrap { @apply mt-6 grid justify-items-center gap-4 rounded-2xl bg-background p-5 text-foreground; }
+@media (min-width: 768px) { .bottom-nav { @apply left-auto right-6 top-1/2 bottom-auto w-24 -translate-y-1/2 grid-cols-1; }.bottom-nav a { @apply py-3; } }
