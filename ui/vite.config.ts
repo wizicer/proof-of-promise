@@ -3,10 +3,18 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
+const publicPort = Number(process.env.PORT ?? 3000);
+const internalPort = Number(process.env.VITE_INTERNAL_PORT ?? 5173);
+
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
-  server: { proxy: { "/api": "http://localhost:3001" } },
+  server: {
+    host: "127.0.0.1",
+    port: internalPort,
+    strictPort: true,
+    hmr: { clientPort: publicPort },
+  },
   build: {
     rollupOptions: {
       output: {

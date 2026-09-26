@@ -1,6 +1,10 @@
 import { signRequest } from "@worldcoin/idkit-core/signing";
 import cookieParser from "cookie-parser";
 import express, { type Request, type Response } from "express";
+import { existsSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import type { RequestHandler } from "express";
 import {
   cancelHandover, consumeChallenge, createChallenge, createPromise, currentPerson,
   getPromise, joinPromise, listPromises, loginByNullifier, loginBySession, logout, transition,
@@ -14,7 +18,12 @@ const routeId = (request: Request) => {
 const asyncRoute = (handler: (request: Request, response: Response) => Promise<unknown>) =>
   (request: Request, response: Response, next: (error?: unknown) => void) => void handler(request, response).catch(next);
 
-export function createApp() {
+type FrontendOptions =
+  | { mode?: "none" }
+  | { mode: "development"; proxy: RequestHandler }
+  | { mode: "production"; distPath?: string };
+
+export function createApp(frontend: FrontendOptions = {}) {
   const app = express();
   app.disable("x-powered-by");
   app.use(express.json({ limit: "32kb" }));
@@ -104,6 +113,27 @@ export function createApp() {
       if (!person) return response.status(401).json({ error: "Sign in first" });
       return await operation(routeId(request), person) ? response.json({ success: true }) : response.status(409).json({ error });
     }));
+  }
+
+  app.use("/api", (_request, response) => response.status(404).json({ error: "API route not found" }));
+
+  if (frontend.mode === "development") app.use(frontend.proxy);
+
+  if (frontend.mode === "production") {
+    const defaultDist = resolve(dirname(fileURLToPath(import.meta.url)), "../../ui/dist");
+    const distPath = frontend.distPath ?? defaultDist;
+    if (!existsSync(resolve(distPath, "index.html"))) throw new Error(`UI build not found at ${distPath}. Run npm run build first.`);
+    app.use(express.static(distPath, {
+      index: false,
+      setHeaders(response, filePath) {
+        if (filePath.includes(`${resolve(distPath, "assets")}/`)) response.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+      },
+    }));
+    app.use((request, response, next) => {
+      if (request.method !== "GET" || !request.accepts("html")) return next();
+      response.setHeader("Cache-Control", "no-cache");
+      return response.sendFile(resolve(distPath, "index.html"));
+    });
   }
 
   app.use((error: unknown, _request: Request, response: Response, _next: (error?: unknown) => void) => {
