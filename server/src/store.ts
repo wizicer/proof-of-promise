@@ -3,7 +3,7 @@ import { mkdir, open, readFile, rename, stat, unlink } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import type { HumanPromise, PromiseKind, PromiseRole, PromiseStatus, ShowUpDetails } from "./types.js";
 
-type Person = { id: string; sessionId?: string; worldNullifier?: string; createdAt: string };
+type Person = { id: string; sessionId?: string; worldNullifier?: string; oidcSub?: string; createdAt: string };
 type Session = { tokenHash: string; personId: string; expiresAt: number };
 type Challenge = { nonce: string; action: string; expiresAt: number; used: boolean };
 type PromiseRecord = { id: string; item: string; deadline: string; note: string; createdAt: string; status: PromiseStatus; borrowerId: string; lenderId?: string; fulfilledAt?: string; kind?: PromiseKind; showUp?: ShowUpDetails };
@@ -119,6 +119,17 @@ export async function loginByWorldSession(sessionId: string) {
     let person = data.people.find((entry) => entry.sessionId === sessionId);
     if (!person) {
       person = { id: randomUUID(), sessionId, createdAt: new Date().toISOString() };
+      data.people.push(person);
+    }
+    return createSession(data, person.id);
+  });
+}
+
+export async function loginByOidcSub(oidcSub: string) {
+  return change((data) => {
+    let person = data.people.find((entry) => entry.oidcSub === oidcSub);
+    if (!person) {
+      person = { id: randomUUID(), oidcSub, createdAt: new Date().toISOString() };
       data.people.push(person);
     }
     return createSession(data, person.id);
