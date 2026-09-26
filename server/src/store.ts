@@ -6,7 +6,7 @@ import type { HumanPromise, PromiseKind, PromiseRole, PromiseStatus, ShowUpDetai
 type Person = { id: string; sessionId?: string; worldNullifier?: string; oidcSub?: string; createdAt: string };
 type Session = { tokenHash: string; personId: string; expiresAt: number };
 type Challenge = { nonce: string; action: string; expiresAt: number; used: boolean };
-type PromiseRecord = { id: string; item: string; deadline: string; note: string; createdAt: string; status: PromiseStatus; borrowerId: string; lenderId?: string; fulfilledAt?: string; kind?: PromiseKind; showUp?: ShowUpDetails; durationLabel?: string };
+type PromiseRecord = { id: string; item: string; deadline: string; note: string; createdAt: string; status: PromiseStatus; borrowerId: string; lenderId?: string; fulfilledAt?: string; kind?: PromiseKind; showUp?: ShowUpDetails; durationLabel?: string; icon?: string };
 type Data = { version: 1; people: Person[]; sessions: Session[]; challenges: Challenge[]; promises: PromiseRecord[] };
 
 
@@ -78,6 +78,7 @@ function view(row: PromiseRecord, personId?: string | null): HumanPromise {
     ...(row.showUp ? { showUp: row.showUp } : {}),
     ...(row.fulfilledAt ? { fulfilledAt: row.fulfilledAt } : {}),
     ...(row.durationLabel ? { durationLabel: row.durationLabel } : {}),
+    ...(row.icon ? { icon: row.icon } : {}),
     ...(personId === row.borrowerId ? { myRole: "borrower" as const } : personId === row.lenderId ? { myRole: "lender" as const } : {}),
   };
 }
@@ -162,9 +163,9 @@ export async function listPromises(personId: string) {
     .map((entry) => view(entry, personId));
 }
 
-export async function createPromise(personId: string, item: string, deadline: string, note: string) {
+export async function createPromise(personId: string, item: string, deadline: string, note: string, icon?: string) {
   return change((data) => {
-    const row: PromiseRecord = { id: randomUUID(), item, deadline, note, createdAt: new Date().toISOString(), status: "REQUESTED", borrowerId: personId };
+    const row: PromiseRecord = { id: randomUUID(), item, deadline, note, createdAt: new Date().toISOString(), status: "REQUESTED", borrowerId: personId, icon };
     data.promises.push(row);
     return view(row, personId);
   });
@@ -182,6 +183,7 @@ export async function createShowUpPromise(personId: string, scheduledAt: string,
       borrowerId: personId,
       kind: "SHOW_UP",
       showUp,
+      icon: "CalendarCheck2",
     };
     data.promises.push(row);
     return view(row, personId);
@@ -208,7 +210,7 @@ export async function joinPromise(id: string, personId: string) {
   });
 }
 
-export async function createB2CPromise(merchantId: string, item: string, deadline: string, note: string, durationLabel?: string) {
+export async function createB2CPromise(merchantId: string, item: string, deadline: string, note: string, durationLabel?: string, icon?: string) {
   return change((data) => {
     const row: PromiseRecord = {
       id: randomUUID(),
@@ -221,6 +223,7 @@ export async function createB2CPromise(merchantId: string, item: string, deadlin
       lenderId: merchantId,
       kind: "B2C",
       durationLabel,
+      icon,
     };
     data.promises.push(row);
     return view(row, merchantId);

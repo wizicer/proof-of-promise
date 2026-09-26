@@ -34,5 +34,6 @@ export type HumanPromise = {
   fulfilledAt?: string;
   myRole?: PromiseRole;
   durationLabel?: string;
+  icon?: string;
 };
 
