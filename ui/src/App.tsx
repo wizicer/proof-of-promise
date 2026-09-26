@@ -49,7 +49,28 @@ function relativeTime(value: string) {
   return formatter.format(Math.round(difference / 86_400_000), "day");
 }
 
+const registrationAction = "borrow-from-a-human-register";
+
 function Login({ onVerified }: { onVerified: () => Promise<void> }) {
+  const savedHandle = localStorage.getItem("bfa-login-handle") ?? "";
+  const [mode, setMode] = useState<"login" | "register">(savedHandle ? "login" : "register");
+  const [registrationStep, setRegistrationStep] = useState<"uniqueness" | "session">("uniqueness");
+  const [loginHandle, setLoginHandle] = useState(savedHandle);
+  const [existingSessionId, setExistingSessionId] = useState<`session_${string}` | null>(null);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function locateAccount(event: FormEvent) {
+    event.preventDefault(); setBusy(true); setError("");
+    try { setExistingSessionId((await api.loginContext(loginHandle.trim())).sessionId); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : "Could not find that account"); }
+    finally { setBusy(false); }
+  }
+
+  function switchMode(next: "login" | "register") {
+    setMode(next); setExistingSessionId(null); setRegistrationStep("uniqueness"); setError("");
+  }
+
   return (
     <main className="login-screen">
       <div className="login-orbit" aria-hidden="true"><span /><span /><span /></div>
@@ -62,8 +83,15 @@ function Login({ onVerified }: { onVerified: () => Promise<void> }) {
         </div>
         <div className="rounded-[2rem] bg-background p-5 text-foreground shadow-2xl shadow-black/20">
           <div className="mb-5 flex items-center gap-3"><span className="grid size-11 place-items-center rounded-2xl bg-primary"><ShieldCheck className="size-5" /></span><div><p className="font-bold">One human, one account</p><p className="text-sm text-muted-foreground">Private verification by World ID</p></div></div>
-          <WorldIdButton label="Sign in with World ID" onVerified={onVerified} />
-          <p className="mt-4 text-center text-xs leading-5 text-muted-foreground">No names, emails, or phone numbers needed.</p>
+          <div className="mb-4 grid grid-cols-2 rounded-xl bg-muted p-1 text-sm font-semibold"><button type="button" className={`rounded-lg px-3 py-2 ${mode === "login" ? "bg-background shadow-sm" : "text-muted-foreground"}`} onClick={() => switchMode("login")}>Sign in</button><button type="button" className={`rounded-lg px-3 py-2 ${mode === "register" ? "bg-background shadow-sm" : "text-muted-foreground"}`} onClick={() => switchMode("register")}>Create account</button></div>
+          {mode === "register" ? registrationStep === "uniqueness"
+            ? <WorldIdButton label="Verify unique human" action={registrationAction} onVerified={() => setRegistrationStep("session")} />
+            : <><p className="mb-3 text-sm text-muted-foreground">One last step: create the reusable World Session for this account.</p><WorldIdButton label="Create account session" onVerified={async ({ loginHandle: handle }) => { if (!handle) { setError("Account recovery key was not returned"); return; } localStorage.setItem("bfa-login-handle", handle); setLoginHandle(handle); await onVerified(); }} /></>
+            : existingSessionId
+              ? <><p className="mb-3 text-sm text-muted-foreground">Account found. Prove the saved World Session to restore your Activity.</p><WorldIdButton label="Restore my account" existingSessionId={existingSessionId} onVerified={async () => { localStorage.setItem("bfa-login-handle", loginHandle.trim()); await onVerified(); }} /></>
+              : <form className="grid gap-3" onSubmit={locateAccount}><Label htmlFor="login-handle">Account recovery key</Label><Input id="login-handle" autoComplete="off" spellCheck={false} required placeholder="Paste your recovery key" value={loginHandle} onChange={(event) => setLoginHandle(event.target.value)} /><Button size="lg" disabled={busy} className="h-14 rounded-2xl bg-foreground text-background hover:bg-foreground/90">{busy && <LoaderCircle className="animate-spin" />}Continue</Button></form>}
+          {error && <p role="alert" className="mt-3 text-sm text-destructive">{error}</p>}
+          <p className="mt-4 text-center text-xs leading-5 text-muted-foreground">Keep your recovery key on this device. It locates your private account without a name, email, or phone number.</p>
         </div>
       </section>
     </main>
@@ -218,8 +246,9 @@ function ActivityPage() {
 
 function PersonalPage({ onLogout }: { onLogout: () => Promise<void> }) {
   const [presence, setPresence] = useState(localStorage.getItem("bfa-presence") === "true");
+  const loginHandle = localStorage.getItem("bfa-login-handle") ?? "";
   const { theme, setTheme } = useTheme();
-  return <Shell><section className="compact-page-heading"><h1>Personal</h1><p>Your verified identity and preferences.</p></section><section className="profile-card"><div className="profile-avatar"><Fingerprint /></div><div><p className="text-lg font-bold">Verified human</p><p className="text-sm text-muted-foreground">World ID · Private account</p></div><ShieldCheck className="ml-auto text-success" /></section><section className="settings-card"><div className="setting-row"><div><strong>Fresh presence check</strong><p>Ask World ID to confirm you are present</p></div><Switch checked={presence} onCheckedChange={(value) => { setPresence(value); localStorage.setItem("bfa-presence", String(value)); }} /></div><div className="setting-row"><div><strong>Appearance</strong><p>Light, dark, or follow your device</p></div><DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" className="rounded-xl">{theme === "dark" ? <Moon /> : <Sun />} {theme}<ChevronDown /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onClick={() => setTheme("light")}>Light</DropdownMenuItem><DropdownMenuItem onClick={() => setTheme("dark")}>Dark</DropdownMenuItem><DropdownMenuItem onClick={() => setTheme("system")}>System</DropdownMenuItem></DropdownMenuContent></DropdownMenu></div></section><Button variant="outline" size="lg" className="mt-5 h-14 w-full rounded-2xl text-destructive" onClick={() => void onLogout()}><LogOut />Sign out</Button><p className="mt-8 text-center text-xs leading-5 text-muted-foreground">Your public promise never exposes your World ID nullifier or personal details.</p></Shell>;
+  return <Shell><section className="compact-page-heading"><h1>Personal</h1><p>Your verified identity and preferences.</p></section><section className="profile-card"><div className="profile-avatar"><Fingerprint /></div><div><p className="text-lg font-bold">Verified human</p><p className="text-sm text-muted-foreground">World ID · Private account</p></div><ShieldCheck className="ml-auto text-success" /></section><section className="settings-card">{loginHandle && <div className="setting-row"><div className="min-w-0"><strong>Account recovery key</strong><p className="truncate font-mono">{loginHandle}</p></div><Button variant="outline" className="rounded-xl" onClick={() => void navigator.clipboard.writeText(loginHandle)}><Copy />Copy</Button></div>}<div className="setting-row"><div><strong>Fresh presence check</strong><p>Ask World ID to confirm you are present</p></div><Switch checked={presence} onCheckedChange={(value) => { setPresence(value); localStorage.setItem("bfa-presence", String(value)); }} /></div><div className="setting-row"><div><strong>Appearance</strong><p>Light, dark, or follow your device</p></div><DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline" className="rounded-xl">{theme === "dark" ? <Moon /> : <Sun />} {theme}<ChevronDown /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onClick={() => setTheme("light")}>Light</DropdownMenuItem><DropdownMenuItem onClick={() => setTheme("dark")}>Dark</DropdownMenuItem><DropdownMenuItem onClick={() => setTheme("system")}>System</DropdownMenuItem></DropdownMenuContent></DropdownMenu></div></section><Button variant="outline" size="lg" className="mt-5 h-14 w-full rounded-2xl text-destructive" onClick={() => void onLogout()}><LogOut />Sign out</Button><p className="mt-8 text-center text-xs leading-5 text-muted-foreground">Save your recovery key somewhere private. Your public promise never exposes it or your World ID details.</p></Shell>;
 }
 
 function DetailPage() {
@@ -281,7 +310,11 @@ function DetailPage() {
 
 export function App() {
   const [auth, setAuth] = useState<boolean | null>(null);
-  async function refresh() { setAuth((await api.session()).authenticated); }
+  async function refresh() {
+    const session = await api.session();
+    if (session.loginHandle) localStorage.setItem("bfa-login-handle", session.loginHandle);
+    setAuth(session.authenticated);
+  }
   async function signOut() { await api.logout(); setAuth(false); }
   useEffect(() => { refresh().catch(() => setAuth(false)); }, []);
   if (auth === null) return <div className="grid min-h-dvh place-items-center bg-primary"><LoaderCircle className="animate-spin text-primary-foreground" /></div>;
