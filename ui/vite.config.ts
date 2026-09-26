@@ -1,5 +1,6 @@
 import path from "node:path";
 import { createReadStream } from "node:fs";
+import { createRequire } from "node:module";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig, type Plugin } from "vite";
@@ -7,7 +8,9 @@ import { VitePWA } from "vite-plugin-pwa";
 
 const publicPort = Number(process.env.PORT ?? 3000);
 const internalPort = Number(process.env.VITE_INTERNAL_PORT ?? 5173);
-const idkitWasmPath = path.resolve(__dirname, "node_modules/@worldcoin/idkit-core/dist/idkit_wasm_bg.wasm");
+const require = createRequire(import.meta.url);
+const idkitCoreEntry = require.resolve("@worldcoin/idkit-core");
+const idkitWasmPath = path.join(path.dirname(idkitCoreEntry), "idkit_wasm_bg.wasm");
 
 function serveIdkitWasm(): Plugin {
   return {
