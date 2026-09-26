@@ -12,12 +12,15 @@
   },
   "dependencies": {
     "@borrow-from-a-human/shared": "1.0.0",
+    "@modelcontextprotocol/node": "^2.1.0",
+    "@modelcontextprotocol/server": "^2.1.0",
     "@worldcoin/idkit-core": "^4.0.0",
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
     "http-proxy-middleware": "^3.0.5",
-    "jose": "^6.2.12"
+    "jose": "^6.2.12",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.9",
