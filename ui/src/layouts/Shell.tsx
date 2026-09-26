@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Link, NavLink } from "react-router-dom";
-import { Activity as ActivityIcon, Fingerprint, HandHeart, Home, UserRound } from "lucide-react";
+import { Activity as ActivityIcon, Fingerprint, Home, UserRound } from "lucide-react";
 
 export function Shell({ children }: { children: ReactNode }) {
   return (

@@ -1,4 +1,4 @@
-import { HandHeart, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { WorldIdButton } from "@/components/world-id-button";
 
 export function LoginPage({ onVerified }: { onVerified: () => Promise<void> }) {
