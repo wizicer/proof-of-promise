@@ -7,7 +7,7 @@ export type ShowUpLocation = {
   lng: number;
 };
 
-const AREA_RADIUS_METERS = 2_500;
+const AREA_RADIUS_METERS = 500;
 
 export function ShowUpMap({ value, onChange }: { value: ShowUpLocation; onChange: (location: ShowUpLocation) => void }) {
   const containerRef = useRef<HTMLDivElement>(null);

@@ -173,7 +173,7 @@ function ShowUpPage() {
     </section>
 
     <section className="show-up-card map-card">
-      <div className="show-up-card-title"><div><h2>Choose the area</h2><p>Tap anywhere to move the 5 km area.</p></div><span className="map-radius-pill"><MapPin />5 km</span></div>
+      <div className="show-up-card-title"><div><h2>Choose the area</h2><p>Tap anywhere to move the 1 km area.</p></div><span className="map-radius-pill"><MapPin />1 km</span></div>
       <ShowUpMap value={location} onChange={setLocation} />
       <p className="map-coordinates" aria-live="polite">Center · {location.lat.toFixed(4)}, {location.lng.toFixed(4)}</p>
     </section>
@@ -193,7 +193,7 @@ function ShowUpPage() {
 
     <section className="show-up-summary" aria-live="polite">
       <div className="show-up-summary-icon"><Clock3 /></div>
-      <div><p>Your show-up window</p>{time && hasWindow ? <><strong>{shiftClock(time, -windowHours)}–{shiftClock(time, windowHours)}</strong><span>Around {time}, within ±{windowHours} {windowHours === 1 ? "hour" : "hours"}, inside the selected 5 km area.</span></> : <span>Choose a valid time and window to preview it.</span>}</div>
+      <div><p>Your show-up window</p>{time && hasWindow ? <><strong>{shiftClock(time, -windowHours)}–{shiftClock(time, windowHours)}</strong><span>Around {time}, within ±{windowHours} {windowHours === 1 ? "hour" : "hours"}, inside the selected 1 km area.</span></> : <span>Choose a valid time and window to preview it.</span>}</div>
     </section>
 
     <details className="optional-note show-up-note"><summary>Add a note <span>(optional)</span></summary><div className="mt-3"><div className="mb-2 text-right text-xs text-muted-foreground">{note.length}/240</div><Textarea aria-label="Optional note" maxLength={240} placeholder="Meeting point, how to recognize you, or anything useful…" value={note} onChange={(event) => setNote(event.target.value)} /></div></details>
